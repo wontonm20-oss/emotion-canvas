@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EmotionCanvas v3 — 言葉で描く抽象アート</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07070c;--surface:rgba(255,255,255,0.04);--surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.14);
+  --text:#eaeaf0;--text-2:rgba(255,255,255,0.5);--text-3:rgba(255,255,255,0.3);
+  --accent:#a78bfa;--accent-2:#f0abfc;
+  --vh:100dvh;
+}
+html,body{height:100%;height:100dvh}
+body{font-family:'Inter','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+
+.app{display:grid;grid-template-columns:1fr 380px;height:100dvh;position:relative}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:1fr auto}}
+
+/* Canvas Area */
+.canvas-wrap{position:relative;background:#050508;overflow:hidden;min-height:0}
+canvas#art{width:100%;height:100%;display:block;touch-action:none}
+
+.emotion-overlay{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:5px;max-width:calc(100% - 120px);pointer-events:none;z-index:2;max-height:100px;overflow:hidden}
+.emotion-tag{padding:4px 10px;border-radius:100px;font-size:10.5px;font-weight:500;backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);animation:tagIn 0.5s cubic-bezier(0.16,1,0.3,1);letter-spacing:0.3px;white-space:nowrap}
+@keyframes tagIn{from{opacity:0;transform:translateY(-8px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.canvas-toolbar{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:3}
+.ctrl{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:rgba(12,12,18,0.8);backdrop-filter:blur(20px);color:var(--text-2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-family:inherit}
+.ctrl:hover,.ctrl:active{background:rgba(255,255,255,0.08);color:var(--text)}
+.ctrl svg{width:15px;height:15px}
+
+.hint-overlay{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-3);letter-spacing:1px;pointer-events:none;text-align:center;transition:opacity 0.3s}
+.layer-count{position:absolute;bottom:14px;right:14px;font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums;letter-spacing:0.5px;pointer-events:none}
+
+/* Side Panel (Desktop) / Bottom Sheet (Mobile) */
+.panel{background:rgba(10,10,15,0.96);border-left:1px solid var(--border);display:flex;flex-direction:column;backdrop-filter:blur(40px);overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+@media(max-width:900px){
+  .panel{border-left:none;border-top:1px solid var(--border);max-height:55dvh}
+}
+
+.panel-header{padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.logo{font-size:14px;font-weight:600;letter-spacing:0.5px}
+.logo em{font-style:normal;color:var(--accent);font-weight:400}
+.ver{font-size:10px;color:var(--text-3);letter-spacing:1px}
+
+.panel-section{padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-3);margin-bottom:10px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.section-label .count{color:var(--text-2);letter-spacing:0.5px;text-transform:none;font-size:10px}
+
+/* Input */
+.text-area{width:100%;min-height:72px;max-height:140px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:12px 14px;color:var(--text);font-size:16px;font-family:inherit;line-height:1.55;resize:none;outline:none;transition:all 0.25s;-webkit-appearance:none}
+.text-area::placeholder{color:rgba(255,255,255,0.22)}
+.text-area:focus{border-color:rgba(167,139,250,0.4);background:rgba(255,255,255,0.06)}
+
+.input-toolbar{display:flex;gap:8px;margin-top:10px}
+.btn-gen{flex:1;height:48px;border-radius:12px;border:none;background:linear-gradient(135deg,#a78bfa 0%,#f0abfc 100%);color:#1a0830;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 16px rgba(167,139,250,0.3);letter-spacing:0.3px;-webkit-appearance:none}
+.btn-gen:active{transform:translateY(1px);box-shadow:0 1px 8px rgba(167,139,250,0.4)}
+.btn-gen:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-sec{width:48px;height:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;-webkit-appearance:none}
+.btn-sec:active{background:var(--surface-2);color:var(--text)}
+.btn-sec svg{width:16px;height:16px}
+
+/* Examples */
+.examples{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;max-height:80px;overflow-y:auto}
+.ex-chip{padding:6px 11px;border-radius:100px;font-size:11px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-2);cursor:pointer;transition:all 0.2s;font-family:inherit;white-space:nowrap}
+.ex-chip:active{background:var(--surface-2);color:var(--text);border-color:var(--border-strong)}
+
+/* Emotion meters (compact) */
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:230px;overflow-y:auto;padding-right:4px}
+.meter{display:flex;align-items:center;gap:6px;font-size:10.5px;padding:2px 0}
+.meter-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.meter-name{width:60px;color:var(--text-2);flex-shrink:0;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meter-bar{flex:1;height:2.5px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;min-width:20px}
+.meter-fill{height:100%;border-radius:2px;transition:width 0.6s cubic-bezier(0.16,1,0.3,1),background 0.6s;width:0%}
+.meter-val{font-size:9.5px;color:var(--text-3);width:18px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* Palette */
+.palette{display:flex;gap:4px;flex-wrap:wrap;max-height:60px;overflow:hidden}
+.swatch{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);transition:all 0.3s}
+
+/* History */
+.history{flex:1;padding:10px 20px;border-top:1px solid var(--border);overflow-y:auto;min-height:0}
+.history-item{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;color:var(--text-2);line-height:1.4;cursor:pointer;transition:background 0.15s}
+.history-item:last-child{border-bottom:none}
+.history-item:active{background:rgba(255,255,255,0.04)}
+.history-item .phrase{color:var(--text);display:block;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item .meta{font-size:10px;color:var(--text-3);display:flex;gap:6px;align-items:center}
+.history-item .mini-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Toast */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-70px);padding:10px 20px;background:rgba(167,139,250,0.2);border:1px solid rgba(167,139,250,0.32);color:#e9d5ff;border-radius:100px;font-size:12px;backdrop-filter:blur(20px);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);z-index:200;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.panel::-webkit-scrollbar,.history::-webkit-scrollbar,.meters::-webkit-scrollbar,.examples::-webkit-scrollbar{width:4px;height:4px}
+.panel::-webkit-scrollbar-thumb,.history::-webkit-scrollbar-thumb,.meters::-webkit-scrollbar-thumb,.examples::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+
+@media(max-width:900px){
+  .panel-section{padding:10px 14px}
+  .panel-header{padding:8px 14px}
+  .history{padding:8px 14px;max-height:120px}
+  .meters{max-height:150px;grid-template-columns:1fr 1fr}
+  .examples{max-height:62px}
+  .emotion-overlay{max-height:70px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="canvas-wrap">
+    <canvas id="art"></canvas>
+    <div class="emotion-overlay" id="emotionTags"></div>
+    <div class="canvas-toolbar">
+      <button class="ctrl" onclick="togglePersist()" id="persistBtn" title="永続/単発">∞</button>
+      <button class="ctrl" onclick="exportPNG()" title="保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+    </div>
+    <div class="hint-overlay" id="hint">文章を入力 → 「アートを生成」</div>
+    <div class="layer-count">レイヤー <span id="layerCount">0</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="logo"><em>Emotion</em>Canvas</div>
+      <div class="ver">v3 · 50感情</div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">テキスト入力</div>
+      <textarea class="text-area" id="textInput" placeholder="気持ち、記憶、情景を自由に..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text"></textarea>
+      <div class="input-toolbar">
+        <button class="btn-gen" id="genBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.9l-6.2 4.4 2.4-7.4L2 9.4h7.6z"/></svg>
+          アートを生成
+        </button>
+        <button class="btn-sec" onclick="clearCanvas()" title="クリア">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        </button>
+      </div>
+      <div class="examples" id="examples"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">感情分析 <span class="count">/ 50感情</span></div>
+      <div class="meters" id="meters"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">カラーパレット</div>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="history" id="history">
+      <div class="section-label">履歴</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 50 EMOTIONS =====
+const EMOTIONS = {
+  // Positive high-energy
+  joy:         {name:'喜び',     c:[255,191,36],  s:[251,146,60],  style:'burst',      pos:{x:0.6,y:0.3}},
+  excitement:  {name:'興奮',     c:[249,115,22],  s:[234,88,12],   style:'electric',   pos:{x:0.7,y:0.35}},
+  euphoria:    {name:'歓喜',     c:[251,191,36],  s:[252,211,77],  style:'burst',      pos:{x:0.65,y:0.25}},
+  ecstasy:     {name:'恍惚',     c:[236,72,153],  s:[219,39,119],  style:'spiral',     pos:{x:0.55,y:0.35}},
+  triumph:     {name:'勝利感',   c:[245,158,11],  s:[217,119,6],   style:'ascend',     pos:{x:0.6,y:0.25}},
+  pride:       {name:'誇り',     c:[252,211,77],  s:[234,179,8],   style:'ascend',     pos:{x:0.55,y:0.28}},
+  vibrancy:    {name:'躍動',     c:[217,70,239],  s:[192,38,211],  style:'burst',      pos:{x:0.65,y:0.45}},
+  passion:     {name:'情熱',     c:[239,68,68],   s:[220,38,38],   style:'electric',   pos:{x:0.7,y:0.55}},
+
+  // Love family
+  love:        {name:'愛情',     c:[251,113,133], s:[244,63,94],   style:'bloom',      pos:{x:0.7,y:0.5}},
+  tenderness:  {name:'慈しみ',   c:[240,171,252], s:[232,121,249], style:'bloom',      pos:{x:0.6,y:0.55}},
+  longing:     {name:'憧れ',     c:[232,121,249], s:[217,70,239],  style:'driftSmoke', pos:{x:0.5,y:0.4}},
+  yearning:    {name:'思慕',     c:[192,132,252], s:[168,85,247],  style:'flow',       pos:{x:0.45,y:0.55}},
+  bond:        {name:'絆',       c:[244,114,182], s:[236,72,153],  style:'bloom',      pos:{x:0.65,y:0.5}},
+  warmth:      {name:'温もり',   c:[251,146,60],  s:[249,115,22],  style:'pulse',      pos:{x:0.55,y:0.5}},
+
+  // Green/nature/calm/growth
+  calm:        {name:'穏やか',   c:[52,211,153],  s:[16,185,129],  style:'wave',       pos:{x:0.4,y:0.6}},
+  hope:        {name:'希望',     c:[134,239,172], s:[74,222,128],  style:'ascend',     pos:{x:0.5,y:0.3}},
+  relief:      {name:'安堵',     c:[110,231,183], s:[52,211,153],  style:'wave',       pos:{x:0.45,y:0.55}},
+  content:     {name:'満足',     c:[16,185,129],  s:[5,150,105],   style:'wave',       pos:{x:0.4,y:0.55}},
+  gratitude:   {name:'感謝',     c:[167,243,208], s:[134,239,172], style:'bloom',      pos:{x:0.5,y:0.5}},
+  peace:       {name:'平安',     c:[187,247,208], s:[134,239,172], style:'wave',       pos:{x:0.4,y:0.65}},
+  trust:       {name:'信頼',     c:[56,189,248],  s:[14,165,233],  style:'wave',       pos:{x:0.35,y:0.55}},
+  security:    {name:'安心',     c:[14,165,233],  s:[2,132,199],   style:'wave',       pos:{x:0.35,y:0.6}},
+  empathy:     {name:'共感',     c:[94,234,212],  s:[45,212,191],  style:'bloom',      pos:{x:0.45,y:0.5}},
+
+  // Blue sadness family
+  sadness:     {name:'悲しみ',   c:[96,165,250],  s:[59,130,246],  style:'flow',       pos:{x:0.3,y:0.75}},
+  loneliness:  {name:'寂しさ',   c:[129,140,248], s:[99,102,241],  style:'fall',       pos:{x:0.25,y:0.7}},
+  melancholy:  {name:'憂鬱',     c:[99,102,241],  s:[79,70,229],   style:'fall',       pos:{x:0.3,y:0.7}},
+  bittersweet: {name:'切なさ',   c:[147,197,253], s:[96,165,250],  style:'flow',       pos:{x:0.35,y:0.65}},
+  nostalgia:   {name:'郷愁',     c:[251,146,60],  s:[194,65,12],   style:'driftSmoke', pos:{x:0.3,y:0.5}},
+  disappointment:{name:'失望',   c:[100,116,139], s:[71,85,105],   style:'fall',       pos:{x:0.28,y:0.72}},
+  regret:      {name:'後悔',     c:[156,163,175], s:[107,114,128], style:'driftSmoke', pos:{x:0.32,y:0.68}},
+  guilt:       {name:'罪悪感',   c:[71,85,105],   s:[51,65,85],    style:'driftSmoke', pos:{x:0.3,y:0.72}},
+  shame:       {name:'恥',       c:[180,83,9],    s:[146,64,14],   style:'tremble',    pos:{x:0.35,y:0.7}},
+
+  // Purple - awe/mystery/spiritual
+  awe:         {name:'畏怖',     c:[192,132,252], s:[168,85,247],  style:'spiral',     pos:{x:0.5,y:0.35}},
+  mystery:     {name:'神秘',     c:[147,51,234],  s:[126,34,206],  style:'spiral',     pos:{x:0.5,y:0.4}},
+  moved:       {name:'感動',     c:[168,85,247],  s:[147,51,234],  style:'bloom',      pos:{x:0.5,y:0.4}},
+  curiosity:   {name:'好奇心',   c:[216,180,254], s:[192,132,252], style:'scatter',    pos:{x:0.55,y:0.4}},
+  surprise:    {name:'驚き',     c:[236,72,153],  s:[219,39,119],  style:'scatter',    pos:{x:0.6,y:0.4}},
+  reverence:   {name:'尊敬',     c:[124,58,237],  s:[109,40,217],  style:'ascend',     pos:{x:0.5,y:0.3}},
+  elation:     {name:'高揚',     c:[221,214,254], s:[196,181,253], style:'ascend',     pos:{x:0.55,y:0.3}},
+
+  // Red/anger family
+  anger:       {name:'怒り',     c:[248,113,113], s:[239,68,68],   style:'shockwave',  pos:{x:0.7,y:0.65}},
+  indignation: {name:'憤り',     c:[220,38,38],   s:[185,28,28],   style:'shockwave',  pos:{x:0.72,y:0.6}},
+  irritation:  {name:'苛立ち',   c:[251,113,133], s:[244,63,94],   style:'tremble',    pos:{x:0.68,y:0.6}},
+  jealousy:    {name:'嫉妬',     c:[132,204,22],  s:[101,163,13],  style:'flow',       pos:{x:0.65,y:0.6}},
+  hatred:      {name:'憎しみ',   c:[127,29,29],   s:[88,28,16],    style:'shockwave',  pos:{x:0.75,y:0.7}},
+  contempt:    {name:'軽蔑',     c:[120,53,15],   s:[87,34,10],    style:'shockwave',  pos:{x:0.7,y:0.68}},
+
+  // Fear family
+  fear:        {name:'恐怖',     c:[94,102,124],  s:[55,65,81],    style:'tremble',    pos:{x:0.4,y:0.7}},
+  anxiety:     {name:'不安',     c:[100,116,139], s:[71,85,105],   style:'tremble',    pos:{x:0.4,y:0.72}},
+  tension:     {name:'緊張',     c:[148,163,184], s:[100,116,139], style:'electric',   pos:{x:0.5,y:0.65}},
+  isolation:   {name:'孤独',     c:[75,85,99],    s:[55,65,81],    style:'fall',       pos:{x:0.2,y:0.75}},
+  helplessness:{name:'無力感',   c:[115,115,115], s:[82,82,82],    style:'fall',       pos:{x:0.25,y:0.75}},
+  resignation: {name:'諦め',     c:[107,114,128], s:[75,85,99],    style:'driftSmoke', pos:{x:0.3,y:0.75}},
+};
+
+// ===== KEYWORDS (50 emotions x dedicated vocabulary) =====
+const KW = {
+  joy:['嬉しい','楽しい','幸せ','最高','素晴らしい','ワクワク','笑','喜','happy','glad','excited','joyful','delighted','cheerful'],
+  excitement:['わくわく','ワクワク','興奮','ドキドキ','熱','燃','やば','激アツ','excitement','thrill','hype','pumped','rush'],
+  euphoria:['歓喜','狂喜','絶頂','有頂天','天にも昇る','euphoria','elated','overjoyed','exhilarated'],
+  ecstasy:['恍惚','うっとり','めくるめく','陶酔','忘我','ecstasy','rapture','bliss','intoxicated'],
+  triumph:['勝った','勝利','達成','やった','成し遂げた','triumph','victory','achieved','conquered','won'],
+  pride:['誇り','誇らしい','胸を張','堂々','自信','pride','proud','dignified','honored'],
+  vibrancy:['躍動','弾む','踊る','生き生き','活力','vibrant','lively','dynamic','energetic'],
+  passion:['情熱','燃える','熱い想い','命をかけ','一途','passion','fervent','ardent','burning'],
+  love:['愛','恋','大切','抱きしめ','想い','永遠','そば','守','夫','妻','恋人','love','adore','dear','darling','beloved','cherish'],
+  tenderness:['慈しみ','優しさ','思いやり','慈愛','母性','tenderness','gentle','caring','kind'],
+  longing:['憧れ','焦がれ','恋しい','ずっと会いたかった','longing','crave','yearn','ache'],
+  yearning:['思慕','慕う','偲ぶ','思い焦がれ','yearning','nostalgic for','pine','miss deeply'],
+  bond:['絆','繋がり','仲間','一緒','分かり合え','bond','connection','together','fellowship'],
+  warmth:['温もり','ぬくもり','暖かい','ほっこり','温かさ','warmth','warm','cozy','snug'],
+  calm:['穏やか','静か','落ち着','癒','ゆったり','のんびり','深呼吸','瞑想','calm','peace','quiet','serene','tranquil','relax'],
+  hope:['希望','夢','未来','きっと','いつか','信じ','前向き','始まり','芽','hope','dream','wish','believe','future','aspire'],
+  relief:['安堵','ほっとした','救われた','助かった','relief','relieved','saved'],
+  content:['満足','十分','満ち足り','幸福','contentment','content','satisfied','fulfilled'],
+  gratitude:['感謝','ありがと','お陰','救われ','gratitude','grateful','thankful','blessed'],
+  peace:['平安','平穏','安寧','静寂','peace','serenity','stillness'],
+  trust:['信頼','信じる','頼れる','trust','faith','reliable','trustworthy'],
+  security:['安心','安全','心強い','守られ','security','secure','safe','protected'],
+  empathy:['共感','寄り添','分かち合','わかる','empathy','empathize','understand','resonate'],
+  sadness:['悲しい','辛い','涙','泣','苦しい','別れ','sadness','sad','cry','tears','sorrow','hurt','grief'],
+  loneliness:['寂しい','一人ぼっち','誰もいない','独り','loneliness','lonely','alone','isolated'],
+  melancholy:['憂鬱','物憂い','重い','暗い','冷たい','melancholy','melancholic','gloomy','somber'],
+  bittersweet:['切ない','胸が痛む','ほろ苦い','ビタースイート','bittersweet','poignant','wistful'],
+  nostalgia:['懐かしい','昔','子供の頃','思い出','あの頃','記憶','nostalgia','memory','remember','past','childhood'],
+  disappointment:['失望','がっかり','落胆','期待外れ','disappointment','disappointed','let down','dismayed'],
+  regret:['後悔','やり直したい','しなければよかった','もっと','regret','remorse','ruefully','lament'],
+  guilt:['罪悪感','申し訳ない','すまない','罪','guilt','guilty','sorry','ashamed'],
+  shame:['恥ずかしい','恥','情けない','顔が赤く','shame','shameful','embarrassed','humiliated'],
+  awe:['畏怖','圧倒','壮大','神々しい','息をのむ','awe','awesome','breathtaking','sublime','magnificent'],
+  mystery:['神秘','不思議','謎','奥深い','mystery','mysterious','enigma','mystic'],
+  moved:['感動','心が震える','胸を打','泣けた','moved','touched','stirred','heart-warming'],
+  curiosity:['好奇心','気になる','知りたい','なぜ','curiosity','curious','wondering','intrigued'],
+  surprise:['驚','びっくり','まさか','突然','衝撃','信じられ','surprise','shock','sudden','unexpected','wow','amaze'],
+  reverence:['尊敬','敬う','崇拝','畏敬','reverence','respect','admire','revere'],
+  elation:['高揚','高まる','舞い上が','気分が上がる','elation','elated','uplift','exalted'],
+  anger:['怒','腹立','ムカ','許せ','最悪','キレ','爆発','angry','furious','rage','mad','pissed'],
+  indignation:['憤り','憤慨','義憤','indignation','outrage','indignant'],
+  irritation:['苛立ち','イライラ','鬱陶しい','うざい','irritation','annoyed','irritated','bothered'],
+  jealousy:['嫉妬','羨ましい','妬ましい','ねたみ','jealousy','jealous','envious','envy'],
+  hatred:['憎しみ','憎い','嫌悪','大嫌い','hatred','hate','loathe','despise'],
+  contempt:['軽蔑','見下す','蔑む','侮蔑','contempt','scorn','disdain'],
+  fear:['怖','恐','震え','ビクビク','おびえ','fear','scared','afraid','terror','dread'],
+  anxiety:['不安','心配','落ち着かない','ソワソワ','anxiety','anxious','worry','nervous'],
+  tension:['緊張','張り詰め','ピリピリ','tension','tense','strained','uptight'],
+  isolation:['孤独','取り残','見捨て','誰も','isolation','isolated','abandoned','forsaken'],
+  helplessness:['無力','どうにもならない','手の打ちよう','絶望的','helplessness','powerless','hopeless'],
+  resignation:['諦め','仕方ない','もういい','どうでもいい','resignation','resigned','give up','whatever'],
+};
+
+// ===== Blends =====
+const BLENDS = [
+  {a:'joy',b:'sadness',name:'ほろ苦さ',color:[217,149,149]},
+  {a:'love',b:'sadness',name:'切ない愛',color:[200,120,170]},
+  {a:'nostalgia',b:'joy',name:'甘い記憶',color:[251,170,120]},
+  {a:'excitement',b:'fear',name:'高揚と恐れ',color:[240,150,80]},
+  {a:'awe',b:'fear',name:'畏怖',color:[150,120,200]},
+  {a:'hope',b:'melancholy',name:'希望の揺らぎ',color:[180,190,220]},
+  {a:'love',b:'loneliness',name:'愛の孤独',color:[190,130,180]},
+  {a:'pride',b:'shame',name:'誇りと恥',color:[200,150,100]},
+  {a:'anger',b:'sadness',name:'悔しさ',color:[190,130,150]},
+  {a:'gratitude',b:'sadness',name:'ありがとうという涙',color:[160,190,200]},
+];
+
+function analyzeEmotion(text){
+  const lower = text.toLowerCase();
+  const scores = {};
+  let total = 0;
+  for(const [e,words] of Object.entries(KW)){
+    let s=0;
+    for(const w of words){
+      const regex = new RegExp(w,'gi');
+      const matches = lower.match(regex);
+      if(matches) s += matches.length;
+    }
+    if(text.length>30) s *= 1 + Math.min(text.length/200,0.5);
+    scores[e] = s;
+    total += s;
+  }
+  const result = {};
+  if(total===0){
+    for(const e of Object.keys(EMOTIONS)) result[e] = e==='calm'?25:(e==='nostalgia'?6:2);
+  } else {
+    for(const [e,s] of Object.entries(scores)) result[e] = Math.min(100, Math.round((s/total)*100*1.3));
+  }
+  const blends = [];
+  for(const b of BLENDS){
+    if(result[b.a]>20 && result[b.b]>20){
+      blends.push({...b, strength:Math.min(result[b.a],result[b.b])});
+    }
+  }
+  return {scores:result, blends};
+}
+
+function getDominant(scores){
+  let max=0,dom='calm';
+  for(const [e,s] of Object.entries(scores)) if(s>max){max=s;dom=e;}
+  return dom;
+}
+
+// ===== Canvas =====
+const canvas = document.getElementById('art');
+const ctx = canvas.getContext('2d');
+let W, H;
+let particleSystems = [];
+let time = 0;
+let layerCount = 0;
+let persistMode = true;
+let history_data = [];
+let persistCanvas, persistCtx;
+
+function resize(){
+  const wrap = canvas.parentElement;
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  if(W<=0||H<=0) return;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.imageSmoothingEnabled = true;
+  if(!persistCanvas){
+    persistCanvas = document.createElement('canvas');
+    persistCtx = persistCanvas.getContext('2d');
+  }
+  persistCanvas.width = W*dpr; persistCanvas.height = H*dpr;
+  persistCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',()=>setTimeout(resize,80));
+window.addEventListener('orientationchange',()=>setTimeout(resize,200));
+if(window.visualViewport) window.visualViewport.addEventListener('resize',()=>setTimeout(resize,100));
+setTimeout(resize,20); resize();
+
+// ===== Particle System =====
+class PS{
+  constructor(x,y,colors,intensity,style){
+    this.particles=[];
+    this.x=x; this.y=y;
+    this.age=0;
+    this.style=style;
+    this.colors=colors;
+    const count = Math.min(100, 18 + Math.floor(intensity*1.6));
+    for(let i=0;i<count;i++){
+      const c = colors[Math.floor(Math.random()*colors.length)];
+      const useSec = Math.random()>0.5;
+      const r = useSec?c.r2:c.r, g=useSec?c.g2:c.g, b=useSec?c.b2:c.b;
+      this.particles.push(this.make(i,count,r,g,b));
+    }
+  }
+
+  make(i,count,r,g,b){
+    const s=this.style, x=this.x, y=this.y;
+    const base={r,g,b,life:0,maxLife:230+Math.random()*230,currentAlpha:0};
+    if(s==='burst'){
+      const a=Math.random()*Math.PI*2, sp=Math.random()*3.3+1;
+      return {...base,x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,size:Math.random()*26+6,alpha:Math.random()*0.6+0.2,decay:0.975};
+    }
+    if(s==='bloom'){
+      const a=(i/count)*Math.PI*2+Math.random()*0.4, d=70+Math.random()*130;
+      return {...base,x,y,tx:x+Math.cos(a)*d,ty:y+Math.sin(a)*d,size:Math.random()*30+10,alpha:Math.random()*0.35+0.12,speed:0.006+Math.random()*0.014,oscPhase:Math.random()*Math.PI*2};
+    }
+    if(s==='flow'){
+      return {...base,x:x+(Math.random()-0.5)*140,y:y+(Math.random()-0.5)*40,vx:(Math.random()-0.5)*0.8,vy:-Math.random()*1.2-0.3,size:Math.random()*40+12,alpha:Math.random()*0.32+0.1,curve:Math.random()*Math.PI*2,drift:Math.random()*0.5+0.3};
+    }
+    if(s==='wave'){
+      return {...base,baseX:Math.random()*W,baseY:y+(Math.random()-0.5)*80,x:0,y:0,freq:Math.random()*0.02+0.005,amp:Math.random()*80+30,size:Math.random()*48+14,alpha:Math.random()*0.2+0.05,phase:Math.random()*Math.PI*2,drift:0.3+Math.random()*0.5};
+    }
+    if(s==='spiral'){
+      const a=(i/count)*Math.PI*6;
+      return {...base,cx:x,cy:y,angle:a,radius:i*1.7,angularSpeed:0.008+Math.random()*0.022,growSpeed:0.25+Math.random()*0.5,x,y,size:Math.random()*18+7,alpha:Math.random()*0.4+0.12};
+    }
+    if(s==='ascend'){
+      return {...base,x:x+(Math.random()-0.5)*120,y:y+Math.random()*80,vx:(Math.random()-0.5)*0.3,vy:-Math.random()*2-0.8,size:Math.random()*22+8,alpha:Math.random()*0.45+0.15,sparkle:Math.random()*Math.PI*2};
+    }
+    if(s==='electric'){
+      const a=Math.random()*Math.PI*2, sp=Math.random()*5.5+1.8;
+      return {...base,x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,size:Math.random()*12+3,alpha:Math.random()*0.65+0.3,decay:0.94,zigzag:Math.random()*Math.PI*2,zigFreq:0.2+Math.random()*0.3};
+    }
+    if(s==='driftSmoke'){
+      return {...base,x:x+(Math.random()-0.5)*60,y:y+(Math.random()-0.5)*60,vx:(Math.random()-0.5)*0.4,vy:-Math.random()*0.5-0.2,size:Math.random()*50+20,alpha:Math.random()*0.16+0.04,growRate:0.998+Math.random()*0.004};
+    }
+    if(s==='fall'){
+      return {...base,x:x+(Math.random()-0.5)*200,y:y-80,vx:(Math.random()-0.5)*0.3,vy:Math.random()*1.4+0.4,size:Math.random()*18+5,alpha:Math.random()*0.38+0.1,wobble:Math.random()*Math.PI*2};
+    }
+    if(s==='scatter'){
+      const a=Math.random()*Math.PI*2, sp=Math.random()*4.5+2;
+      return {...base,x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,size:Math.random()*10+3,alpha:Math.random()*0.65+0.2,decay:0.93};
+    }
+    if(s==='shockwave'){
+      const a=(i/count)*Math.PI*2;
+      return {...base,x,y,vx:Math.cos(a)*5.5,vy:Math.sin(a)*5.5,size:Math.random()*15+4,alpha:Math.random()*0.65+0.3,decay:0.96};
+    }
+    if(s==='tremble'){
+      return {...base,baseX:x+(Math.random()-0.5)*180,baseY:y+(Math.random()-0.5)*180,x,y,vx:0,vy:0,size:Math.random()*11+3,alpha:Math.random()*0.48+0.15,trembleF:0.1+Math.random()*0.2,trembleA:2+Math.random()*5};
+    }
+    if(s==='pulse'){
+      const a=(i/count)*Math.PI*2;
+      return {...base,cx:x,cy:y,baseAngle:a,radius:Math.random()*30+20,pulseF:0.03+Math.random()*0.04,pulseA:20+Math.random()*40,x,y,size:Math.random()*24+8,alpha:Math.random()*0.4+0.15};
+    }
+    return {...base,x,y,vx:0,vy:0,size:10,alpha:0.3,decay:0.98};
+  }
+
+  update(){
+    this.age++;
+    const s=this.style;
+    for(const p of this.particles){
+      p.life++;
+      const lr = p.life/p.maxLife;
+      const fI = Math.min(p.life/25,1);
+      const fO = lr>0.65 ? 1-(lr-0.65)/0.35 : 1;
+      p.currentAlpha = p.alpha*fI*fO;
+      if(s==='burst'||s==='electric'||s==='scatter'||s==='shockwave'){
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= p.decay; p.vy *= p.decay;
+        if(s==='electric') p.x += Math.sin(time*p.zigFreq+p.zigzag)*1.5;
+      } else if(s==='bloom'){
+        p.x += (p.tx-p.x)*p.speed;
+        p.y += (p.ty-p.y)*p.speed;
+        p.x += Math.sin(time*0.02+p.oscPhase)*0.3;
+      } else if(s==='flow'){
+        p.x += p.vx + Math.sin(p.curve+time*0.015)*p.drift;
+        p.y += p.vy;
+        p.curve += 0.012;
+      } else if(s==='wave'){
+        p.baseX += 0.3+p.drift;
+        if(p.baseX > W+50) p.baseX = -50;
+        p.x = p.baseX;
+        p.y = p.baseY + Math.sin(time*p.freq+p.phase)*p.amp;
+      } else if(s==='spiral'){
+        p.angle += p.angularSpeed;
+        p.radius += p.growSpeed;
+        p.x = p.cx + Math.cos(p.angle)*p.radius;
+        p.y = p.cy + Math.sin(p.angle)*p.radius;
+      } else if(s==='ascend'){
+        p.x += p.vx + Math.sin(time*0.03+p.sparkle)*0.5;
+        p.y += p.vy;
+        p.vy *= 0.995;
+      } else if(s==='driftSmoke'){
+        p.x += p.vx; p.y += p.vy;
+        p.size *= p.growRate;
+      } else if(s==='fall'){
+        p.y += p.vy;
+        p.x += p.vx + Math.sin(time*0.03+p.wobble)*0.3;
+        p.vy += 0.008;
+      } else if(s==='tremble'){
+        p.x = p.baseX + Math.sin(time*p.trembleF)*p.trembleA + (Math.random()-0.5)*2;
+        p.y = p.baseY + Math.cos(time*p.trembleF*1.3)*p.trembleA + (Math.random()-0.5)*2;
+      } else if(s==='pulse'){
+        const r = p.radius + Math.sin(time*p.pulseF)*p.pulseA;
+        p.x = p.cx + Math.cos(p.baseAngle)*r;
+        p.y = p.cy + Math.sin(p.baseAngle)*r;
+      }
+    }
+    this.particles = this.particles.filter(p=>p.life<p.maxLife);
+  }
+
+  draw(t){
+    for(const p of this.particles){
+      if(p.currentAlpha<=0) continue;
+      t.beginPath();
+      const g = t.createRadialGradient(p.x,p.y,0,p.x,p.y,Math.max(1,p.size));
+      g.addColorStop(0, `rgba(${p.r},${p.g},${p.b},${p.currentAlpha})`);
+      g.addColorStop(0.5, `rgba(${p.r},${p.g},${p.b},${p.currentAlpha*0.3})`);
+      g.addColorStop(1, `rgba(${p.r},${p.g},${p.b},0)`);
+      t.fillStyle = g;
+      t.arc(p.x,p.y,p.size,0,Math.PI*2);
+      t.fill();
+    }
+  }
+
+  isDead(){return this.particles.length===0}
+}
+
+let bgAngle=0, curDomColor=null;
+function drawBG(){
+  ctx.fillStyle='#050508';
+  ctx.fillRect(0,0,W,H);
+  bgAngle += 0.0007;
+  if(curDomColor){
+    const gx = W*0.5 + Math.cos(bgAngle)*W*0.3;
+    const gy = H*0.5 + Math.sin(bgAngle*0.7)*H*0.3;
+    const g = ctx.createRadialGradient(gx,gy,0,gx,gy,W*0.7);
+    const c = curDomColor;
+    g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},0.05)`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+let bakeT=0;
+function bake(){
+  if(!persistMode) return;
+  for(const sys of particleSystems){
+    for(const p of sys.particles){
+      if(p.currentAlpha<=0) continue;
+      persistCtx.beginPath();
+      const g = persistCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,Math.max(1,p.size*0.8));
+      g.addColorStop(0,`rgba(${p.r},${p.g},${p.b},${p.currentAlpha*0.07})`);
+      g.addColorStop(1,`rgba(${p.r},${p.g},${p.b},0)`);
+      persistCtx.fillStyle=g;
+      persistCtx.arc(p.x,p.y,p.size*0.8,0,Math.PI*2);
+      persistCtx.fill();
+    }
+  }
+}
+
+function loop(){
+  time++;
+  drawBG();
+  if(persistMode){ctx.globalAlpha=1; ctx.drawImage(persistCanvas,0,0,W,H);}
+  for(const sys of particleSystems){sys.update(); sys.draw(ctx);}
+  particleSystems = particleSystems.filter(s=>!s.isDead());
+  if(persistMode){bakeT++; if(bakeT>=8){bake(); bakeT=0;}}
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ===== UI =====
+const textInput = document.getElementById('textInput');
+const emotionTags = document.getElementById('emotionTags');
+const paletteEl = document.getElementById('palette');
+const historyEl = document.getElementById('history');
+const metersEl = document.getElementById('meters');
+const examplesEl = document.getElementById('examples');
+const genBtn = document.getElementById('genBtn');
+
+// Build meters
+(function(){
+  let html = '';
+  for(const [e,d] of Object.entries(EMOTIONS)){
+    const col = `rgb(${d.c.join(',')})`;
+    html += `<div class="meter">
+      <div class="meter-dot" style="background:${col};color:${col}"></div>
+      <span class="meter-name" title="${d.name}">${d.name}</span>
+      <div class="meter-bar"><div class="meter-fill" id="m-${e}" style="background:${col}"></div></div>
+      <span class="meter-val" id="v-${e}">0</span>
+    </div>`;
+  }
+  metersEl.innerHTML = html;
+})();
+
+// Examples
+const EXAMPLES = [
+  '夜風が心地よい、夏の終わりの少しの寂しさ',
+  '憧れの人に会えた、信じられない1日',
+  '雨の音を聴きながら過去を思い返していた',
+  '何もかも捨てて走り出したい衝動',
+  '静かな森の奥で鳥の声だけが響く',
+  '長い年月を経てやっと伝えられた言葉',
+  '裏切られた気がして、でも自分も悪かった',
+  '朝焼けを見て涙が溢れた',
+];
+examplesEl.innerHTML = EXAMPLES.map(e=>`<button class="ex-chip" onclick="useEx(this)">${e}</button>`).join('');
+function useEx(btn){textInput.value=btn.textContent; updateAnalysis();}
+
+// IME-safe Enter handling
+let isComposing = false;
+textInput.addEventListener('compositionstart',()=>isComposing=true);
+textInput.addEventListener('compositionend',()=>isComposing=false);
+textInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !e.shiftKey && !isComposing){
+    e.preventDefault();
+    generateArt();
+  }
+});
+
+// Button: support both click and touchend reliably
+let touchHandled = false;
+genBtn.addEventListener('touchend',e=>{
+  e.preventDefault();
+  touchHandled = true;
+  generateArt();
+  setTimeout(()=>touchHandled=false, 500);
+});
+genBtn.addEventListener('click',e=>{
+  if(touchHandled) return;
+  generateArt();
+});
+
+// Live analysis
+let debounceT;
+textInput.addEventListener('input',()=>{
+  clearTimeout(debounceT);
+  debounceT = setTimeout(updateAnalysis, 220);
+});
+
+function updateAnalysis(){
+  const text = textInput.value.trim();
+  if(!text){
+    for(const e of Object.keys(EMOTIONS)){
+      const fill=document.getElementById('m-'+e), val=document.getElementById('v-'+e);
+      if(fill) fill.style.width='0%';
+      if(val) val.textContent='0';
+    }
+    emotionTags.innerHTML='';
+    paletteEl.innerHTML='';
+    curDomColor=null;
+    return;
+  }
+  const {scores, blends} = analyzeEmotion(text);
+  for(const [e,s] of Object.entries(scores)){
+    const fill=document.getElementById('m-'+e), val=document.getElementById('v-'+e);
+    if(fill) fill.style.width=s+'%';
+    if(val) val.textContent=s;
+  }
+  const dom = getDominant(scores);
+  curDomColor = EMOTIONS[dom].c;
+  updateTags(scores, blends);
+  updatePalette(scores);
+}
+
+function updateTags(scores, blends){
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  let html='';
+  for(const [e,s] of sorted){
+    if(s>15){
+      const d = EMOTIONS[e];
+      html += `<span class="emotion-tag" style="background:rgba(${d.c.join(',')},0.15);color:rgba(${d.c.join(',')},0.95)">${d.name} ${s}%</span>`;
+    }
+  }
+  for(const b of blends.slice(0,3)){
+    html += `<span class="emotion-tag" style="background:rgba(${b.color.join(',')},0.18);color:rgba(${b.color.join(',')},0.95);border-color:rgba(${b.color.join(',')},0.35)">⋈ ${b.name}</span>`;
+  }
+  emotionTags.innerHTML = html;
+}
+
+function updatePalette(scores){
+  const sorted = Object.entries(scores).filter(([,s])=>s>10).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let html='';
+  for(const [e] of sorted){
+    const d = EMOTIONS[e];
+    html += `<div class="swatch" style="background:rgb(${d.c.join(',')})"></div>`;
+    html += `<div class="swatch" style="background:rgb(${d.s.join(',')})"></div>`;
+  }
+  paletteEl.innerHTML = html;
+}
+
+function generateArt(){
+  const text = textInput.value.trim();
+  if(!text){showToast('文章を入力してください'); textInput.focus(); return;}
+  const {scores, blends} = analyzeEmotion(text);
+  const dom = getDominant(scores);
+  curDomColor = EMOTIONS[dom].c;
+
+  const colors=[];
+  const sorted = Object.entries(scores).filter(([,s])=>s>10).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  for(const [e] of sorted){
+    const d = EMOTIONS[e];
+    colors.push({r:d.c[0],g:d.c[1],b:d.c[2],r2:d.s[0],g2:d.s[1],b2:d.s[2]});
+  }
+
+  for(const [e,s] of sorted){
+    const d = EMOTIONS[e];
+    const px = W*(0.15 + d.pos.x*0.7 + (Math.random()-0.5)*0.12);
+    const py = H*(0.12 + d.pos.y*0.76 + (Math.random()-0.5)*0.12);
+    particleSystems.push(new PS(px,py,colors,s,d.style));
+  }
+  for(const b of blends.slice(0,3)){
+    const bc = [{r:b.color[0],g:b.color[1],b:b.color[2],r2:b.color[0]*0.8|0,g2:b.color[1]*0.8|0,b2:Math.min(255,b.color[2]*1.1)|0}];
+    particleSystems.push(new PS(W*(0.3+Math.random()*0.4), H*(0.3+Math.random()*0.4), bc, b.strength*0.7, 'bloom'));
+  }
+
+  layerCount++;
+  document.getElementById('layerCount').textContent = layerCount;
+  document.getElementById('hint').style.opacity = '0';
+
+  addHistory(text, dom);
+  updateTags(scores, blends);
+  updatePalette(scores);
+
+  textInput.value='';
+  textInput.blur();
+}
+
+function addHistory(text, dom){
+  history_data.unshift({text, dom, time:Date.now()});
+  if(history_data.length>30) history_data.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  let html='<div class="section-label">履歴</div>';
+  for(const h of history_data){
+    const d = EMOTIONS[h.dom];
+    html += `<div class="history-item" onclick="replay('${encodeURIComponent(h.text)}')">
+      <span class="phrase">${esc(h.text)}</span>
+      <span class="meta"><span class="mini-dot" style="background:rgb(${d.c.join(',')})"></span>${d.name}</span>
+    </div>`;
+  }
+  historyEl.innerHTML = html;
+}
+
+function replay(enc){
+  textInput.value = decodeURIComponent(enc);
+  updateAnalysis();
+  generateArt();
+}
+
+function esc(s){return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+
+function clearCanvas(){
+  particleSystems=[];
+  layerCount=0;
+  document.getElementById('layerCount').textContent='0';
+  if(persistCtx) persistCtx.clearRect(0,0,W,H);
+  showToast('クリアしました');
+}
+
+function togglePersist(){
+  persistMode=!persistMode;
+  document.getElementById('persistBtn').textContent = persistMode?'∞':'—';
+  showToast(persistMode?'永続モード':'単発モード');
+}
+
+function exportPNG(){
+  const tmp = document.createElement('canvas');
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  tmp.width=W*dpr; tmp.height=H*dpr;
+  const tc = tmp.getContext('2d');
+  tc.setTransform(dpr,0,0,dpr,0,0);
+  tc.fillStyle='#050508';
+  tc.fillRect(0,0,W,H);
+  if(persistCanvas) tc.drawImage(persistCanvas,0,0,W,H);
+  for(const sys of particleSystems){
+    for(const p of sys.particles){
+      if(p.currentAlpha<=0) continue;
+      tc.beginPath();
+      const g = tc.createRadialGradient(p.x,p.y,0,p.x,p.y,Math.max(1,p.size));
+      g.addColorStop(0,`rgba(${p.r},${p.g},${p.b},${p.currentAlpha})`);
+      g.addColorStop(1,`rgba(${p.r},${p.g},${p.b},0)`);
+      tc.fillStyle=g;
+      tc.arc(p.x,p.y,p.size,0,Math.PI*2);
+      tc.fill();
+    }
+  }
+  const link=document.createElement('a');
+  link.download=`emotion_art_${Date.now()}.png`;
+  link.href=tmp.toDataURL('image/png');
+  link.click();
+  showToast('保存しました');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// Mobile keyboard handling: resize on viewport change
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', ()=>{
+    document.documentElement.style.setProperty('--vh', window.visualViewport.height+'px');
+    setTimeout(resize, 100);
+  });
+}
+</script>
+</body>
+</html>
