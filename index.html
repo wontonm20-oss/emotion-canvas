@@ -17,7 +17,8 @@
 html,body{height:100%;height:100dvh}
 body{font-family:'Inter','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 
-.app{display:grid;grid-template-columns:1fr 380px;height:100dvh;position:relative}
+.app{display:grid;grid-template-columns:340px 1fr 380px;height:100dvh;position:relative}
+@media(max-width:1100px){.app{grid-template-columns:1fr 360px}}
 @media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:1fr auto}}
 
 /* Canvas Area */
@@ -106,10 +107,130 @@ canvas#art{width:100%;height:100%;display:block;touch-action:none}
   .examples{max-height:62px}
   .emotion-overlay{max-height:70px}
 }
+
+/* ========== SIDEBAR / GALLERY ========== */
+.sidebar{
+  background:rgba(6,6,11,0.99);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;z-index:50;
+  grid-row:1;
+}
+@media(max-width:1100px){.sidebar{display:none}}
+@media(max-width:900px){
+  .sidebar{
+    display:flex;
+    position:fixed;top:0;left:0;bottom:0;
+    width:min(88vw,360px);
+    transform:translateX(-100%);
+    transition:transform 0.32s cubic-bezier(0.16,1,0.3,1);
+    z-index:200;
+    border-right:1px solid var(--border-strong);
+  }
+  .sidebar.open{transform:translateX(0)}
+}
+
+.sidebar-header{
+  padding:14px 16px 12px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;border-bottom:1px solid var(--border);
+}
+.sidebar-title{font-size:12px;font-weight:600;letter-spacing:1.5px;color:var(--text);text-transform:uppercase}
+.sidebar-close{
+  width:28px;height:28px;border:none;background:none;
+  color:var(--text-3);cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  border-radius:6px;font-size:18px;line-height:1;
+}
+.sidebar-close:hover{color:var(--text);background:var(--surface)}
+@media(max-width:900px){.sidebar-close{display:flex}}
+
+.q-list{flex:1;overflow-y:auto;padding:4px 0}
+.q-list::-webkit-scrollbar{width:3px}
+.q-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
+
+.q-item{border-bottom:1px solid rgba(255,255,255,0.03)}
+.q-header{
+  padding:9px 14px;
+  display:flex;justify-content:space-between;align-items:center;
+  cursor:pointer;font-size:12px;color:var(--text-2);
+  transition:background 0.15s,color 0.15s;gap:8px;user-select:none;
+}
+.q-header:hover{background:rgba(255,255,255,0.03);color:var(--text)}
+.q-header.active{color:var(--accent)}
+.q-num{font-size:9.5px;color:var(--text-3);flex-shrink:0;width:18px;font-variant-numeric:tabular-nums}
+.q-text{flex:1;line-height:1.4}
+.q-arrow{font-size:13px;color:var(--text-3);flex-shrink:0;transition:transform 0.2s;display:inline-block}
+.q-header.active .q-arrow{transform:rotate(90deg)}
+
+.q-samples{display:none;padding:2px 0 6px;background:rgba(255,255,255,0.012)}
+.q-samples.open{display:block}
+
+.sample-item{
+  padding:6px 14px 6px 32px;
+  display:flex;align-items:flex-start;gap:7px;
+  cursor:pointer;transition:background 0.12s;
+}
+.sample-item:hover{background:rgba(255,255,255,0.04)}
+.sample-item:active{background:rgba(167,139,250,0.08)}
+.emo-badge{
+  padding:1px 6px;border-radius:100px;font-size:9px;font-weight:600;
+  flex-shrink:0;margin-top:2px;
+  border:1px solid rgba(255,255,255,0.1);
+  letter-spacing:0.3px;white-space:nowrap;
+}
+.sample-text{font-size:11px;color:var(--text-2);line-height:1.5}
+.sample-item:hover .sample-text{color:var(--text)}
+
+/* Overlay for mobile sidebar */
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);z-index:199;
+}
+.sidebar-overlay.show{display:block}
+
+/* Gallery open button (mobile / tablet) */
+.gallery-btn{
+  display:none;
+  position:fixed;bottom:22px;left:14px;
+  width:46px;height:46px;border-radius:14px;
+  background:rgba(167,139,250,0.14);
+  border:1px solid rgba(167,139,250,0.28);
+  backdrop-filter:blur(20px);
+  color:var(--accent);cursor:pointer;
+  align-items:center;justify-content:center;
+  z-index:100;box-shadow:0 4px 18px rgba(0,0,0,0.45);
+  transition:all 0.2s;
+}
+.gallery-btn:active{transform:scale(0.94)}
+.gallery-btn svg{width:20px;height:20px}
+@media(max-width:1100px){.gallery-btn{display:flex}}
 </style>
 </head>
 <body>
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Gallery open button (mobile/tablet) -->
+<button class="gallery-btn" onclick="openSidebar()" title="例文ギャラリー">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+  </svg>
+</button>
+
 <div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">例文ギャラリー</span>
+      <button class="sidebar-close" onclick="closeSidebar()">×</button>
+    </div>
+    <div class="q-list" id="qList">
+      <div style="padding:20px 14px;font-size:11px;color:var(--text-3);text-align:center">読み込み中…</div>
+    </div>
+  </div>
+
   <div class="canvas-wrap">
     <canvas id="art"></canvas>
     <div class="emotion-overlay" id="emotionTags"></div>
@@ -227,6 +348,14 @@ const EMOTIONS = {
   isolation:   {name:'孤独',     c:[75,85,99],    s:[55,65,81],    style:'fall',       pos:{x:0.2,y:0.75}},
   helplessness:{name:'無力感',   c:[115,115,115], s:[82,82,82],    style:'fall',       pos:{x:0.25,y:0.75}},
   resignation: {name:'諦め',     c:[107,114,128], s:[75,85,99],    style:'driftSmoke', pos:{x:0.3,y:0.75}},
+  serenity:    {name:'静寂',     c:[186,230,253], s:[125,211,252], style:'wave',       pos:{x:0.32,y:0.62}},
+  relaxation:  {name:'くつろぎ', c:[187,247,208], s:[74,222,128],  style:'wave',       pos:{x:0.38,y:0.60}},
+  drowsy:      {name:'まどろみ', c:[196,181,253], s:[167,139,250], style:'driftSmoke', pos:{x:0.30,y:0.55}},
+  mindfulness: {name:'無心',     c:[94,234,212],  s:[45,212,191],  style:'wave',       pos:{x:0.35,y:0.50}},
+  composure:   {name:'余裕',     c:[148,163,184], s:[100,116,139], style:'ascend',     pos:{x:0.42,y:0.52}},
+  refreshed:   {name:'清々しい', c:[103,232,249], s:[34,211,238],  style:'scatter',    pos:{x:0.48,y:0.45}},
+  contemplation:{name:'省察',    c:[165,180,252], s:[129,140,248], style:'driftSmoke', pos:{x:0.28,y:0.58}},
+  solitude_positive:{name:'ひとり時間',c:[250,204,21],s:[234,179,8],style:'wave',     pos:{x:0.33,y:0.53}},
 };
 
 // ===== KEYWORDS (50 emotions x dedicated vocabulary) =====
@@ -2086,6 +2215,613 @@ const genBtn = document.getElementById('genBtn');
   metersEl.innerHTML = html;
 })();
 
+const QUESTIONS = [
+  {q:"今日どんな1日だった？",samples:[
+    {text:"推しのライブに行けて嬉しくて楽しくて最高だった！",emo:"joy"},
+    {text:"誰とも話さなかった…一人ぼっちで寂しい1日",emo:"loneliness"},
+    {text:"上司に理不尽に怒られてムカつく、腹が立つ",emo:"anger"},
+    {text:"明日の旅行がワクワクしてドキドキが止まらない",emo:"excitement"},
+    {text:"明日のプレゼンが心配で落ち着かない、不安",emo:"anxiety"},
+    {text:"助けてもらって感謝しかない、ありがとう",emo:"gratitude"},
+    {text:"昔の友達の話が出て懐かしくなった午後",emo:"nostalgia"},
+    {text:"難しい試験に合格！やり遂げた、勝った！",emo:"triumph"},
+    {text:"一日中眠くてうとうとしてたまどろみの1日",emo:"drowsy"},
+    {text:"好奇心がうずく、なぜあそこにあるのかどうして知りたい",emo:"curiosity"},
+  ]},
+  {q:"最近心に残った出来事は？",samples:[
+    {text:"あの言葉に感動して心が震えた、泣けた",emo:"moved"},
+    {text:"誰にも言えなくて一人ぼっちで寂しかった",emo:"loneliness"},
+    {text:"夕焼けが壮大で言葉を失った、息をのむ景色",emo:"awe"},
+    {text:"嬉しいけど切ない、ほろ苦い出来事だった",emo:"bittersweet"},
+    {text:"まさかそんなことが！びっくりして驚いた",emo:"surprise"},
+    {text:"きっとうまくいく、前向きな気持ちになれた出来事",emo:"hope"},
+    {text:"親切にしてもらってありがとう、感謝でいっぱい",emo:"gratitude"},
+    {text:"あの出来事を物思いにふけって振り返っている",emo:"contemplation"},
+    {text:"不公平だと憤慨した、おかしいと思う出来事",emo:"indignation"},
+    {text:"その人への愛情がさらに深まった瞬間だった",emo:"love"},
+  ]},
+  {q:"大切な人について一言",samples:[
+    {text:"心から愛してる、ずっと大好きで大切にしたい",emo:"love"},
+    {text:"そっと慈しんで優しく包んでくれる、いとおしい存在",emo:"tenderness"},
+    {text:"憧れて焦がれる気持ちが止まらない、思いを馳せている",emo:"longing"},
+    {text:"絆で繋がっている、分かち合える仲間の存在",emo:"bond"},
+    {text:"そばにいるだけでぬくもりを感じてほっこりする",emo:"warmth"},
+    {text:"お陰で今の自分がある、感謝しかないありがとう",emo:"gratitude"},
+    {text:"思い焦がれる存在を慕い偲ぶ、今も思慕している",emo:"yearning"},
+    {text:"悲しくてつらくて涙が溢れる、悲しみがこみ上げてくる",emo:"sadness"},
+    {text:"大切だからこそ切なくて胸が痛む",emo:"bittersweet"},
+    {text:"一緒にいるだけで嬉しくて楽しい最高の人",emo:"joy"},
+  ]},
+  {q:"仕事（勉強）で最近あったこと",samples:[
+    {text:"難しいプロジェクトを達成！やり遂げた、勝ち取った",emo:"triumph"},
+    {text:"理不尽に怒られてムカつく、腹が立って怒りが収まらない",emo:"anger"},
+    {text:"締め切りが迫って心配で落ち着かない、不安でたまらない",emo:"anxiety"},
+    {text:"自分の仕事に誇りを感じた、胸を張れる瞬間だった",emo:"pride"},
+    {text:"どうにもならなくて無力感でいっぱい、何もできない",emo:"helplessness"},
+    {text:"ようやく終わってほっとした、よかった、肩の荷が降りた",emo:"relief"},
+    {text:"同僚の態度にイライラして鬱陶しくてうざい",emo:"irritation"},
+    {text:"このプロジェクトへの情熱が熱く燃えている",emo:"passion"},
+    {text:"あの時こうすればよかったと後悔してしまう",emo:"regret"},
+    {text:"ミスをして恥ずかしい、情けなくて穴があれば入りたい",emo:"shame"},
+  ]},
+  {q:"朝起きて最初に思ったこと",samples:[
+    {text:"ねむい…もう少し寝たい、うとうとしてしまう",emo:"drowsy"},
+    {text:"今日もきっといい日になる、前向きに頑張ろう",emo:"hope"},
+    {text:"今日の発表が心配で落ち着かない、不安でドキドキ",emo:"anxiety"},
+    {text:"目が覚めて嬉しい、楽しい1日になりそうで最高",emo:"joy"},
+    {text:"また仕事か、仕方ない、しょうがないか…",emo:"resignation"},
+    {text:"充実した1日を過ごせる気がして満足感がある",emo:"content"},
+    {text:"清々しい朝、爽快な目覚めで気持ちいい",emo:"refreshed"},
+    {text:"アラームがうざい、もっと寝たかった、イライラする",emo:"irritation"},
+    {text:"好奇心でいっぱい、なぜそうなるのかどうして知りたい",emo:"curiosity"},
+    {text:"穏やかな朝、静かにゆっくり落ち着いて過ごしたい",emo:"calm"},
+  ]},
+  {q:"ふと子供の頃を思い出した瞬間",samples:[
+    {text:"子供の頃の記憶が懐かしくてたまらない、あの頃が恋しい",emo:"nostalgia"},
+    {text:"あの頃が切なくてほろ苦い、胸が痛む思い出",emo:"bittersweet"},
+    {text:"あの頃のぬくもりが今も胸に残ってほっこりする",emo:"warmth"},
+    {text:"あの頃に憧れて焦がれて思いを馳せている",emo:"longing"},
+    {text:"昔は嬉しくて楽しい毎日だったなあ、幸せだった",emo:"joy"},
+    {text:"つらくて悲しくて涙が止まらない、悲しみと辛さが溢れる",emo:"sadness"},
+    {text:"あの頃の体験が今も圧倒的に心に刻まれて言葉を失う",emo:"awe"},
+    {text:"子供の頃の謎めいた感覚、奥深い不思議が忘れられない",emo:"mystery"},
+    {text:"大好きだったあの場所、あの人を思うと愛情が溢れる",emo:"love"},
+    {text:"あの頃のことを物思いにふけって深く考えてしまう",emo:"contemplation"},
+  ]},
+  {q:"夢や目標について",samples:[
+    {text:"きっと夢を叶える、前向きに信じて歩んでいく",emo:"hope"},
+    {text:"目標への情熱が熱く燃えてくる、熱中している",emo:"passion"},
+    {text:"本当に達成できるか心配で落ち着かない、不安になる",emo:"anxiety"},
+    {text:"夢を持って生き生きと躍動感がある毎日を送っている",emo:"vibrancy"},
+    {text:"もう諦めた、仕方ないかな、しょうがないと思ってる",emo:"resignation"},
+    {text:"失敗が怖くて恐ろしくて震える、ビクビクしてしまう",emo:"fear"},
+    {text:"夢が叶う未来を想像してワクワクしてドキドキする",emo:"excitement"},
+    {text:"自分の目標に誇りを持って胸を張って進んでいる",emo:"pride"},
+    {text:"仲間を信頼して頼れるから一緒に頑張れると思う",emo:"trust"},
+    {text:"夢に思い焦がれて慕いながら進んでいく",emo:"yearning"},
+  ]},
+  {q:"最近ハマっていること",samples:[
+    {text:"これに情熱を注いで熱中して熱狂してしまっている",emo:"passion"},
+    {text:"やっていると嬉しくて楽しくて最高で幸せになれる",emo:"joy"},
+    {text:"ハマりすぎてワクワクしてドキドキが止まらない",emo:"excitement"},
+    {text:"もっと知りたくて気になって好奇心が止まらない",emo:"curiosity"},
+    {text:"やると満足感と充実感でいっぱいになれる趣味だ",emo:"content"},
+    {text:"やるたびに生き生きと活力と躍動感が湧いてくる",emo:"vibrancy"},
+    {text:"もう大好きで愛情が止まらない、大切な趣味になった",emo:"love"},
+    {text:"謎めいた奥深い不思議な世界がある、底知れない趣味",emo:"mystery"},
+    {text:"いつも新しい発見にびっくりさせられて驚く",emo:"surprise"},
+    {text:"まったりのんびりゆっくり楽しめる癒しの趣味だ",emo:"relaxation"},
+  ]},
+  {q:"天気が今の気分にどう影響する？",samples:[
+    {text:"雨の日は憂鬱でどんよりと気分が重くなってしまう",emo:"melancholy"},
+    {text:"晴れた日は清々しくて爽快な気分になれて最高",emo:"refreshed"},
+    {text:"曇りの日は穏やかで静かな落ち着いた気持ちになれる",emo:"calm"},
+    {text:"青空を見ると嬉しくて楽しくて幸せな気持ちになる",emo:"joy"},
+    {text:"霧の朝はしんとした静寂に包まれる幻想的な感じがする",emo:"serenity"},
+    {text:"どんよりした天気は眠くてうとうとしてしまう",emo:"drowsy"},
+    {text:"台風が近づいて心配で落ち着かない、不安になってくる",emo:"anxiety"},
+    {text:"初雪を見るとワクワクしてドキドキして興奮する",emo:"excitement"},
+    {text:"雨が続くと悲しくてつらくなってきてしまう",emo:"sadness"},
+    {text:"虹や夕焼けが壮大で言葉を失う、息をのむ美しさだ",emo:"awe"},
+  ]},
+  {q:"SNSを開いた瞬間の気持ち",samples:[
+    {text:"くだらない投稿にイライラしてうざくて鬱陶しい",emo:"irritation"},
+    {text:"友達の充実した投稿が羨ましくて嫉妬してしまう",emo:"jealousy"},
+    {text:"まさかのニュースにびっくりして驚いた",emo:"surprise"},
+    {text:"誰かの話に感動して心が震えた、泣けた",emo:"moved"},
+    {text:"不正義な発言を見て憤慨した、おかしいと思う",emo:"indignation"},
+    {text:"好奇心が刺激される、なぜそうなのかどうして知りたい",emo:"curiosity"},
+    {text:"みんな楽しそうで、自分だけ一人ぼっちで寂しいなあ",emo:"loneliness"},
+    {text:"いいね！がついて嬉しくて楽しい気分になった",emo:"joy"},
+    {text:"炎上しそうで心配で落ち着かない、不安になってくる",emo:"anxiety"},
+    {text:"馬鹿にした投稿を見て軽蔑した、見下したくなった",emo:"contempt"},
+  ]},
+  {q:"誰かに伝えたい一言",samples:[
+    {text:"大好き、ずっと愛してる、大切にしたいと伝えたい",emo:"love"},
+    {text:"ありがとう、感謝しかない、お陰でここまで来られた",emo:"gratitude"},
+    {text:"もう許せない、怒りをぶつけたい、腹が立つ",emo:"anger"},
+    {text:"きっと大丈夫、前向きに信じてほしいと伝えたい",emo:"hope"},
+    {text:"そっと優しく、思いやりを込めて伝えたい言葉がある",emo:"tenderness"},
+    {text:"後悔してる、あの時ああすればよかったと謝りたい",emo:"regret"},
+    {text:"申し訳ない、ごめんなさい、罪悪感があって伝えたい",emo:"guilt"},
+    {text:"悲しいこと、つらいことを涙ながらに分かってほしい",emo:"sadness"},
+    {text:"誇りに思う、胸を張ってほしいと伝えたい",emo:"pride"},
+    {text:"情熱的に熱く本気の言葉を伝えたい",emo:"passion"},
+  ]},
+  {q:"お気に入りの場所での気持ち",samples:[
+    {text:"ここにいると穏やかで落ち着いた静かな気持ちになれる",emo:"calm"},
+    {text:"しんとした静寂に包まれる特別な大切な場所",emo:"serenity"},
+    {text:"来るたびに嬉しくて楽しくて幸せな最高の場所",emo:"joy"},
+    {text:"まったりのんびりゆっくりくつろげるお気に入りの場所",emo:"relaxation"},
+    {text:"満足感と充実感でいっぱいになれる大切な場所",emo:"content"},
+    {text:"昔からよく来ていて懐かしい思い出の詰まった場所",emo:"nostalgia"},
+    {text:"平和で平安な気持ちになれる安寧を感じる唯一の場所",emo:"peace"},
+    {text:"ここでは無心になって今ここに集中できる禅の場所",emo:"mindfulness"},
+    {text:"ぬくもりを感じてほっこりした暖かい大切な場所",emo:"warmth"},
+    {text:"ひとり時間を楽しむ、一人の贅沢な自分だけの場所",emo:"solitude_positive"},
+  ]},
+  {q:"今の疲れ度を表現して",samples:[
+    {text:"どうにもならない、何もできない、無力感でいっぱい",emo:"helplessness"},
+    {text:"うとうとしてまどろんで眠い、ねむくてたまらない限界",emo:"drowsy"},
+    {text:"もういい、諦めた、仕方ない、しょうがないと思う",emo:"resignation"},
+    {text:"疲れているのに心配事で不安で落ち着かない",emo:"anxiety"},
+    {text:"疲れているのにイライラして鬱陶しくてうざい",emo:"irritation"},
+    {text:"疲れてどんより、憂鬱で気分が重くてつらい",emo:"melancholy"},
+    {text:"疲れたけど穏やかな気持ちで落ち着いて静かにいられる",emo:"calm"},
+    {text:"休んですっきり、リフレッシュできて清々しく爽快",emo:"refreshed"},
+    {text:"充実した疲れで満足、やりきった充実感がある",emo:"content"},
+    {text:"休めばきっと回復する、前向きに希望を持っていたい",emo:"hope"},
+  ]},
+  {q:"未来の自分に向けて",samples:[
+    {text:"きっとうまくいく、未来を信じて前向きに歩んでいく",emo:"hope"},
+    {text:"本当に大丈夫か心配で落ち着かない、不安になってしまう",emo:"anxiety"},
+    {text:"未来が怖くて恐ろしくて震える、ビクビクしてしまう",emo:"fear"},
+    {text:"未来の自分を誇りに思えるよう今から胸を張って進む",emo:"pride"},
+    {text:"後悔しないように、やり直したいと思わないよう行動する",emo:"regret"},
+    {text:"満足できる未来を、充実した人生を歩んでいきたい",emo:"content"},
+    {text:"自分を信じる、頼もしい信頼できる自分でありたい",emo:"trust"},
+    {text:"未来がワクワクしてドキドキする、どんな自分になれるか",emo:"excitement"},
+    {text:"どうにもならないと感じる日もあるけど前に進む",emo:"helplessness"},
+    {text:"憧れの自分に会いたい、焦がれている、思い焦がれる",emo:"longing"},
+  ]},
+  {q:"眠る前にふと考えること",samples:[
+    {text:"明日が心配で落ち着かなくて不安で眠れない夜",emo:"anxiety"},
+    {text:"物思いにふけって思索が止まらない、内省する夜",emo:"contemplation"},
+    {text:"昔のことを懐かしく思い出してしまう子供の頃",emo:"nostalgia"},
+    {text:"考えているうちに眠くてうとうとしてきてねむい",emo:"drowsy"},
+    {text:"きっと明日はいい日になる、前向きでいようと希望を持つ",emo:"hope"},
+    {text:"申し訳ないことをして罪悪感があって眠れない",emo:"guilt"},
+    {text:"あの時後悔したことをまた考えてやり直したいと思う",emo:"regret"},
+    {text:"しんとした静寂の静けさに包まれた穏やかな眠前の時間",emo:"serenity"},
+    {text:"暗闇が怖くて恐ろしくてビクビクしながら眠れない",emo:"fear"},
+    {text:"一人ぼっちで寂しいと感じる夜、誰かに会いたい",emo:"loneliness"},
+  ]},
+  {q:"夜中に目が覚めた時",samples:[
+    {text:"心配なことが浮かんで不安で落ち着かなくて眠れない",emo:"anxiety"},
+    {text:"夜中の静けさに一人ぼっちで寂しくてたまらない",emo:"loneliness"},
+    {text:"暗闇が怖くて恐ろしくて震えてしまうビクビクする",emo:"fear"},
+    {text:"物思いにふけって思索が始まって内省してしまう",emo:"contemplation"},
+    {text:"夜中の静寂、しんとした空気が心地よいと感じる",emo:"serenity"},
+    {text:"謎の音がして好奇心がうずく、なぜの音かどうして",emo:"curiosity"},
+    {text:"こんな時間に起きてしまってイライラしてうざい",emo:"irritation"},
+    {text:"すぐにまた眠くなってうとうとしてきてねむい",emo:"drowsy"},
+    {text:"夜中に憂鬱な気持ちがどんよりと押し寄せてくる",emo:"melancholy"},
+    {text:"深夜の謎めいた雰囲気が神秘的で不思議な感じがする",emo:"mystery"},
+  ]},
+  {q:"電車で人混みに揉まれている時",samples:[
+    {text:"混雑してイライラして鬱陶しくてうざくてたまらない",emo:"irritation"},
+    {text:"どうにもならない、何もできない無力感でいっぱい",emo:"helplessness"},
+    {text:"遅刻しそうで心配で落ち着かない不安でたまらない",emo:"anxiety"},
+    {text:"なぜあれを持っているのか、好奇心と知りたい気持ち",emo:"curiosity"},
+    {text:"人に囲まれているのに孤立して取り残される感覚がある",emo:"isolation"},
+    {text:"穏やかに静かに揺られていく落ち着いた時間になる",emo:"calm"},
+    {text:"揺れに合わせて眠くてうとうとしてきてねむい",emo:"drowsy"},
+    {text:"マナーが悪い人を軽蔑して見下したくなってしまう",emo:"contempt"},
+    {text:"押してくる人に腹が立ってムカついて怒りがこみ上げる",emo:"anger"},
+    {text:"仕方ない、しょうがない、と諦めるしかないかと思う",emo:"resignation"},
+  ]},
+  {q:"休日の予定を立てる瞬間",samples:[
+    {text:"休日の計画を考えるだけでワクワクしてドキドキする",emo:"excitement"},
+    {text:"好きなことができると思うと嬉しくて楽しくて最高",emo:"joy"},
+    {text:"のんびりまったりゆっくり過ごす計画を立てている",emo:"relaxation"},
+    {text:"ひとり時間を存分に楽しむ、おひとりさま計画だ",emo:"solitude_positive"},
+    {text:"行きたかった場所への憧れが焦がれるほど膨らむ",emo:"longing"},
+    {text:"天気が心配で落ち着かない、うまくいくかな不安",emo:"anxiety"},
+    {text:"充実した休日計画で満足感と充実感がある",emo:"content"},
+    {text:"きっと素敵な1日になる、前向きに希望を持っている",emo:"hope"},
+    {text:"大切な人と過ごせる、大好きで愛情あふれる時間",emo:"love"},
+    {text:"静かで穏やかな休日を想像して落ち着いた気持ちになる",emo:"calm"},
+  ]},
+  {q:"失敗した時の気持ち",samples:[
+    {text:"恥ずかしい、情けない、穴があれば入りたいくらい",emo:"shame"},
+    {text:"あの時こうすればよかったと後悔している、やり直したい",emo:"regret"},
+    {text:"こんな結果になって腹が立ってムカつく、怒りが出る",emo:"anger"},
+    {text:"悲しくてつらくて涙が止まらない失敗だった",emo:"sadness"},
+    {text:"申し訳ない、ごめんなさいと罪悪感でいっぱいになる",emo:"guilt"},
+    {text:"次はきっとうまくいく、前向きに希望を持って進む",emo:"hope"},
+    {text:"もういい、仕方ない、しょうがないと諦めるしかない",emo:"resignation"},
+    {text:"無力感でいっぱい、どうにもならない打つ手なし絶望的",emo:"helplessness"},
+    {text:"また失敗するかもと心配で落ち着かない不安になる",emo:"anxiety"},
+    {text:"失敗から学んで生き生きと活力を持って再挑戦する",emo:"vibrancy"},
+  ]},
+  {q:"褒められた瞬間",samples:[
+    {text:"褒められて純粋に嬉しい！喜びで笑顔になれた幸せ",emo:"joy"},
+    {text:"誇りに思う、自信がついて胸を張れるようになった",emo:"pride"},
+    {text:"まさか褒めてもらえるとはびっくりして驚いた",emo:"surprise"},
+    {text:"恥ずかしくて顔が赤くなって恥をかいた気分",emo:"shame"},
+    {text:"ありがとうございます、感謝でいっぱいになった",emo:"gratitude"},
+    {text:"舞い上がりそうで高揚感があって胸が高鳴っている",emo:"elation"},
+    {text:"この人のことがもっと大好きになった、愛情が増した",emo:"love"},
+    {text:"満足感と充実感でいっぱいになれた瞬間だった",emo:"content"},
+    {text:"認めてもらって信頼感が増してもっと頑張れそう",emo:"trust"},
+    {text:"ぬくもりを感じてほっこりした温かい気持ちになった",emo:"warmth"},
+  ]},
+  {q:"推しについて",samples:[
+    {text:"もう大好きで愛してる、推しへの愛情が止まらない",emo:"love"},
+    {text:"情熱が熱狂して止まらない、熱中してしまっている",emo:"passion"},
+    {text:"ライブでドキドキしてワクワクして興奮が最高",emo:"excitement"},
+    {text:"推しを見ると嬉しくて楽しくて幸せで最高になれる",emo:"joy"},
+    {text:"ずっと憧れていた存在、焦がれて恋しく思いを馳せる",emo:"longing"},
+    {text:"圧倒的な才能に言葉を失って壮大で息をのむ存在",emo:"awe"},
+    {text:"推しのパフォーマンスに感動して心が震えて泣けた",emo:"moved"},
+    {text:"推しに近い人が羨ましくて嫉妬してしまう気持ち",emo:"jealousy"},
+    {text:"推しを見るだけで満足感と充実感があふれてくる",emo:"content"},
+    {text:"思い焦がれて慕い続けている存在、偲ぶほど大切",emo:"yearning"},
+  ]},
+  {q:"ペットや動物と過ごす時間",samples:[
+    {text:"ぬくもりを感じてほっこりした幸せな癒しの時間",emo:"warmth"},
+    {text:"一緒にいると嬉しくて楽しくて最高で幸せになれる",emo:"joy"},
+    {text:"優しく慈しんで思いやりをもって大切にしたい",emo:"tenderness"},
+    {text:"一緒にいると穏やかで落ち着いた静かな気持ちになれる",emo:"calm"},
+    {text:"大好きで愛情が止まらない、大切でたまらない存在",emo:"love"},
+    {text:"その仕草に感動して心が震えた、泣けてしまった",emo:"moved"},
+    {text:"一緒にいる時間が切なくてほろ苦い胸が痛む気持ち",emo:"bittersweet"},
+    {text:"動物の能力に圧倒されて言葉を失う壮大な感覚",emo:"awe"},
+    {text:"満足感と充実感でいっぱいになれる最高の時間",emo:"content"},
+    {text:"離れていると会いたくなる恋しい存在になっている",emo:"longing"},
+  ]},
+  {q:"季節の変わり目に感じること",samples:[
+    {text:"昔のことが懐かしく蘇る、子供の頃のあの頃が恋しい",emo:"nostalgia"},
+    {text:"どんよりとした憂鬱な気持ちになりやすい時期だ",emo:"melancholy"},
+    {text:"新しい季節への希望と前向きな気持ちが湧いてくる",emo:"hope"},
+    {text:"季節が過ぎる切なさとほろ苦さを胸が痛む思いで感じる",emo:"bittersweet"},
+    {text:"新しい季節の空気が清々しく爽快でリフレッシュできる",emo:"refreshed"},
+    {text:"季節の移り変わりの壮大さに言葉を失って息をのむ",emo:"awe"},
+    {text:"季節の変わり目は穏やかで静かな落ち着いた気持ちだ",emo:"calm"},
+    {text:"変化する自然が気になって知りたくて好奇心が出る",emo:"curiosity"},
+    {text:"季節が終わって悲しくてつらい、涙が出て悲しみがこみ上げる",emo:"sadness"},
+    {text:"新しい季節がワクワクしてドキドキして興奮する",emo:"excitement"},
+  ]},
+  {q:"初めてのことに挑戦する時",samples:[
+    {text:"初体験にワクワクしてドキドキが止まらない興奮状態",emo:"excitement"},
+    {text:"不安で不安で心配ばかり、落ち着かなくてたまらない",emo:"anxiety"},
+    {text:"怖くて恐ろしくて震えるほど、ビクビクしてしまう",emo:"fear"},
+    {text:"挑戦する自分が誇らしくて自信を持てて胸を張れる",emo:"pride"},
+    {text:"きっとうまくいく、前向きに希望を持って信じている",emo:"hope"},
+    {text:"知りたくて気になって好奇心が爆発しそうになる",emo:"curiosity"},
+    {text:"やり遂げた！勝ち取った！達成した最高の瞬間",emo:"triumph"},
+    {text:"失敗して恥ずかしい恥をかいた、情けなさでいっぱい",emo:"shame"},
+    {text:"挑戦するたびに生き生きと活力と躍動感が湧いてくる",emo:"vibrancy"},
+    {text:"終わってほっとした、よかった、肩の荷が降りた",emo:"relief"},
+  ]},
+  {q:"久しぶりに誰かと再会した瞬間",samples:[
+    {text:"嬉しくて楽しくて最高で幸せな再会だった",emo:"joy"},
+    {text:"懐かしい！子供の頃のあの頃が蘇って懐かしさでいっぱい",emo:"nostalgia"},
+    {text:"まさか会えるとはびっくりして驚いた瞬間だった",emo:"surprise"},
+    {text:"嬉しいけど切ない、ほろ苦い気持ちも胸が痛む",emo:"bittersweet"},
+    {text:"ずっと会いたかった、恋しくて焦がれていたよ",emo:"longing"},
+    {text:"再会に感動した、心が震えて胸を打つ瞬間だった",emo:"moved"},
+    {text:"やっぱり絆で繋がっている、仲間で分かち合えて一緒にいられる",emo:"bond"},
+    {text:"また別れると思うと悲しくてつらくなってしまう",emo:"sadness"},
+    {text:"ぬくもりを感じてほっこりした暖かい再会だった",emo:"warmth"},
+    {text:"元気でよかった、ほっとした、安堵した気持ち",emo:"relief"},
+  ]},
+  {q:"何もない静かな時間",samples:[
+    {text:"しんとした静寂に包まれて穏やかな最高の時間",emo:"serenity"},
+    {text:"のんびりまったりゆっくり過ごす贅沢な時間だ",emo:"relaxation"},
+    {text:"無心になって今ここに集中できる禅のような瞑想時間",emo:"mindfulness"},
+    {text:"ひとり時間を満喫する、おひとりさまの一人の贅沢",emo:"solitude_positive"},
+    {text:"物思いにふけって思索する静かな内省の時間",emo:"contemplation"},
+    {text:"ゆっくりしてたら眠くてうとうとしてきてねむい",emo:"drowsy"},
+    {text:"穏やかで落ち着いた静かな気持ちになれる大切な時間",emo:"calm"},
+    {text:"十分だ、満ち足りた時間に満足して充実感がある",emo:"content"},
+    {text:"何もない時間に憂鬱でどんよりしてきてしまう",emo:"melancholy"},
+    {text:"静かすぎて一人ぼっちで寂しくなってきてしまう",emo:"loneliness"},
+  ]},
+  {q:"家族について",samples:[
+    {text:"家族への愛情が溢れる、愛してる大好き、大切でかけがえない",emo:"love"},
+    {text:"家族との絆が一番強い、繋がりを感じる仲間のような存在",emo:"bond"},
+    {text:"家族のぬくもりにほっこりして癒されて暖かくなる",emo:"warmth"},
+    {text:"家族への感謝がいつもあふれている、ありがとう",emo:"gratitude"},
+    {text:"家族に怒りを感じて腹が立つことも正直ある",emo:"anger"},
+    {text:"昔の家族の思い出が懐かしくてたまらなくなってくる",emo:"nostalgia"},
+    {text:"家族に申し訳なくて罪悪感があってごめんなさい",emo:"guilt"},
+    {text:"遠くにいる家族が恋しくて会いたくてたまらない",emo:"longing"},
+    {text:"家族がいると安心で心強い、守られている気がする",emo:"security"},
+    {text:"家族への切なさとほろ苦さが入り混じる気持ちがある",emo:"bittersweet"},
+  ]},
+  {q:"友達と別れた後",samples:[
+    {text:"別れた後が寂しくて一人ぼっちになった気分になる",emo:"loneliness"},
+    {text:"一緒に過ごした時間のぬくもりがまだ胸に残っている",emo:"warmth"},
+    {text:"嬉しくて笑顔になれた、喜びで楽しくて幸せな気持ち！",emo:"joy"},
+    {text:"昔に戻ったみたいで懐かしくなってしまった",emo:"nostalgia"},
+    {text:"またいつ会えるかと思うと悲しくてつらくなる",emo:"sadness"},
+    {text:"やっぱり友達との絆は特別、一緒にいると仲間だと感じる",emo:"bond"},
+    {text:"充実した時間で満足感と充実感がいっぱいになれた",emo:"content"},
+    {text:"楽しかったからこそ切ない、ほろ苦い胸が痛む気持ち",emo:"bittersweet"},
+    {text:"ありがとう、こんな友達に感謝でいっぱいになれる",emo:"gratitude"},
+    {text:"またきっと会おう、前向きに信じて希望を持っている",emo:"hope"},
+  ]},
+  {q:"旅行に行きたい気持ち",samples:[
+    {text:"旅行を考えるだけでワクワクしてドキドキが止まらない",emo:"excitement"},
+    {text:"行きたい場所への憧れが焦がれるほど強くなっている",emo:"longing"},
+    {text:"きっとまた旅行できる、前向きに希望を持って信じる",emo:"hope"},
+    {text:"旅行中は嬉しくて楽しくて最高の幸せな気分になれる",emo:"joy"},
+    {text:"知らない場所が気になって知りたくて好奇心が湧く",emo:"curiosity"},
+    {text:"準備が大変で心配で落ち着かない、不安になってくる",emo:"anxiety"},
+    {text:"絶景に圧倒されて言葉を失う壮大な体験がしたい",emo:"awe"},
+    {text:"前に行った場所が懐かしくて昔の思い出が蘇ってくる",emo:"nostalgia"},
+    {text:"旅行から帰ると満足感と充実感でいっぱいになれる",emo:"content"},
+    {text:"ひとり旅が好き、一人の時間を楽しむ旅がしたい",emo:"solitude_positive"},
+  ]},
+  {q:"最近ムッとしたこと",samples:[
+    {text:"あの態度にイライラしてうざい、鬱陶しくてイラつく",emo:"irritation"},
+    {text:"腹が立って怒りが収まらない、ムカついて仕方ない",emo:"anger"},
+    {text:"おかしい！不正義だと憤慨した、義憤を感じる",emo:"indignation"},
+    {text:"がっかりして失望して落胆してしまった出来事だった",emo:"disappointment"},
+    {text:"あの人を軽蔑して見下したくなってしまった",emo:"contempt"},
+    {text:"羨ましくて嫉妬してしまった、やきもちを焼いた",emo:"jealousy"},
+    {text:"こんなことになるなら後悔している、やり直したい",emo:"regret"},
+    {text:"恥ずかしくて恥をかいた、情けなさで穴に入りたい気分",emo:"shame"},
+    {text:"悲しくてつらくなってしまった出来事だった",emo:"sadness"},
+    {text:"無力感でいっぱい、どうにもならない打つ手なしだった",emo:"helplessness"},
+  ]},
+  {q:"達成感を感じた瞬間",samples:[
+    {text:"勝った！達成！やり遂げた！制覇した！最高の瞬間",emo:"triumph"},
+    {text:"誇らしくて胸を張って自信が持てた瞬間だった",emo:"pride"},
+    {text:"嬉しくて楽しくて最高の幸せな気分になれた",emo:"joy"},
+    {text:"ほっとした、よかった、肩の荷が降りた安堵の瞬間",emo:"relief"},
+    {text:"舞い上がりそうで高揚感があって胸が高鳴っている",emo:"elation"},
+    {text:"満ち足りた達成後の満足感、充実感が胸に広がった",emo:"content"},
+    {text:"支えてくれた人にありがとう、感謝でいっぱいになった",emo:"gratitude"},
+    {text:"自分の頑張りに感動して心が震えた、泣けてしまった",emo:"moved"},
+    {text:"達成して生き生きと活力と躍動感が湧いてきた",emo:"vibrancy"},
+    {text:"次の目標へのワクワクしてドキドキが止まらない",emo:"excitement"},
+  ]},
+  {q:"自分の容姿について",samples:[
+    {text:"恥ずかしくて情けない、自分の容姿が嫌になってくる",emo:"shame"},
+    {text:"満ち足りた気持ちで満足、十分な自分でいいと思える",emo:"content"},
+    {text:"他の人が羨ましくて嫉妬してしまう、やきもちを焼く",emo:"jealousy"},
+    {text:"自分の見た目に誇りを持って胸を張れる自信がある",emo:"pride"},
+    {text:"人にどう思われるか心配で落ち着かない不安になる",emo:"anxiety"},
+    {text:"こうすればよかったと後悔している、やり直したい",emo:"regret"},
+    {text:"きっと変わっていける、前向きに希望を持って信じる",emo:"hope"},
+    {text:"馬鹿にするような人を軽蔑して見下したくなる",emo:"contempt"},
+    {text:"仕方ない、しょうがない、これが自分だと諦める",emo:"resignation"},
+    {text:"自分のことを愛してる、大好きでいたいと思う",emo:"love"},
+  ]},
+  {q:"SNSで炎上を見た時",samples:[
+    {text:"おかしい！不正義だと憤慨した、義憤を感じてしまう",emo:"indignation"},
+    {text:"気になって詳しく知りたくて好奇心が止まらない",emo:"curiosity"},
+    {text:"自分も巻き込まれるかと心配で落ち着かない不安になる",emo:"anxiety"},
+    {text:"炎上している人を見て軽蔑して見下したくなってしまう",emo:"contempt"},
+    {text:"誰かの勇気ある言葉に感動して心が震えた",emo:"moved"},
+    {text:"理不尽さに怒りを感じてムカつく腹が立ってしまう",emo:"anger"},
+    {text:"見ているだけで怖くて恐ろしくてビクビクしてしまう",emo:"fear"},
+    {text:"悲しくてつらいニュースで涙が出そうになってしまう",emo:"sadness"},
+    {text:"まさかびっくりした、こんなことになるとは驚いた",emo:"surprise"},
+    {text:"仕方ない、しょうがない、またか…と諦めるしかない",emo:"resignation"},
+  ]},
+  {q:"好きな音楽を聴いている時",samples:[
+    {text:"感動して心が震えて泣けてしまうほど素晴らしい曲",emo:"moved"},
+    {text:"聴くと嬉しくて楽しくて最高の幸せな気分になれる",emo:"joy"},
+    {text:"昔を思い出す懐かしい曲が子供の頃を蘇らせてくれる",emo:"nostalgia"},
+    {text:"穏やかで落ち着いた静かな気持ちになれる音楽がある",emo:"calm"},
+    {text:"ワクワクしてドキドキして気分が上がって興奮する曲",emo:"excitement"},
+    {text:"情熱が熱く燃えてきて熱中してしまう曲がある",emo:"passion"},
+    {text:"切なくてほろ苦い、胸が痛む曲を聴いてしまう",emo:"bittersweet"},
+    {text:"高揚感で胸が高鳴り舞い上がる、高揚して気分が上がる",emo:"elation"},
+    {text:"しんとした静寂のような音楽に包まれる感じがする",emo:"serenity"},
+    {text:"まったりのんびりゆっくり聴ける癒しのリラックス曲",emo:"relaxation"},
+  ]},
+  {q:"雨の日の気分",samples:[
+    {text:"雨の日は憂鬱でどんよりと気分が重くなってしまう",emo:"melancholy"},
+    {text:"雨音が穏やかで落ち着いた静かな気持ちになれる",emo:"calm"},
+    {text:"雨の静寂、しんとした空気が心地よく感じられる",emo:"serenity"},
+    {text:"雨の日に昔のことが懐かしく子供の頃が蘇ってくる",emo:"nostalgia"},
+    {text:"雨が続くと悲しくてつらくなってしまってくる",emo:"sadness"},
+    {text:"部屋にいて満足、充実した雨の日の休日になれる",emo:"content"},
+    {text:"雨の日はのんびりまったりゆっくり過ごすのがいい",emo:"relaxation"},
+    {text:"雨音を聞きながら物思いにふけって思索する時間",emo:"contemplation"},
+    {text:"雨音が好きで嬉しくて楽しくて幸せな気持ちになる",emo:"joy"},
+    {text:"雨の日は切なくてほろ苦い感傷的な気持ちになる",emo:"bittersweet"},
+  ]},
+  {q:"お風呂に入っている時",samples:[
+    {text:"お風呂上がりは清々しくて爽快ですっきりリフレッシュ",emo:"refreshed"},
+    {text:"お風呂でまったりのんびりとくつろいで癒される時間",emo:"relaxation"},
+    {text:"うとうとして眠い、まどろんでねむくてたまらなくなる",emo:"drowsy"},
+    {text:"満足感と充実感でいっぱいになれる至福の時間だ",emo:"content"},
+    {text:"穏やかで落ち着いた静かな気持ちになれるお風呂の時間",emo:"calm"},
+    {text:"お風呂で物思いにふけって思索する内省の時間になる",emo:"contemplation"},
+    {text:"お風呂が好きで嬉しくて楽しくて幸せな時間になる",emo:"joy"},
+    {text:"お風呂で無心になって今ここに集中できる瞑想的な時間",emo:"mindfulness"},
+    {text:"ひとり時間を満喫、おひとりさまで一人の贅沢な時間",emo:"solitude_positive"},
+    {text:"疲れがとれてほっとした、よかった、肩の荷が降りた",emo:"relief"},
+  ]},
+  {q:"ご飯がおいしかった時",samples:[
+    {text:"おいしくて嬉しくて楽しくて最高、幸せな食事だった",emo:"joy"},
+    {text:"満足感と充実感でいっぱいになれた幸福な食事",emo:"content"},
+    {text:"作ってくれた人に感謝してありがとうと伝えたくなる",emo:"gratitude"},
+    {text:"ぬくもりを感じてほっこりする手料理の温かさがある",emo:"warmth"},
+    {text:"感動して心が震えるほどおいしい料理に出会えた",emo:"moved"},
+    {text:"昔食べた味で懐かしさが込み上げて子供の頃を思い出す",emo:"nostalgia"},
+    {text:"大好きな味、愛してる、またいつでも食べたい大切な味",emo:"love"},
+    {text:"舞い上がるほど高揚感があって胸が高鳴るおいしさだ",emo:"elation"},
+    {text:"まさかこんなにおいしいとはびっくりして驚いた",emo:"surprise"},
+    {text:"料理への情熱を感じて熱く熱中してしまいそうになる",emo:"passion"},
+  ]},
+  {q:"お金の不安",samples:[
+    {text:"不安で不安で心配ばかり、お金のことが落ち着かない",emo:"anxiety"},
+    {text:"将来が怖い、恐ろしくてビクビクして震えてしまう",emo:"fear"},
+    {text:"どうにもならない、何もできない無力感でいっぱい",emo:"helplessness"},
+    {text:"あの時もっと貯蓄すればよかったと後悔している",emo:"regret"},
+    {text:"緊張してピリピリして張り詰めた気持ちになってしまう",emo:"tension"},
+    {text:"きっとなんとかなる、前向きに希望を持って信じたい",emo:"hope"},
+    {text:"仕方ない、しょうがない、諦めるしかないか…",emo:"resignation"},
+    {text:"お金の話でイライラして鬱陶しくなってうざくなる",emo:"irritation"},
+    {text:"情けない、恥ずかしい、こんな状況が恥だと思う",emo:"shame"},
+    {text:"お金の不安で憂鬱でどんよりと気分が重くなってくる",emo:"melancholy"},
+  ]},
+  {q:"健康診断の結果を待つ時",samples:[
+    {text:"不安で心配、落ち着かなくて不安でたまらない気持ち",emo:"anxiety"},
+    {text:"怖くて恐ろしくてビクビクしながら結果を待っている",emo:"fear"},
+    {text:"緊張して張り詰めた気持ち、ピリピリとした緊張感がある",emo:"tension"},
+    {text:"きっと大丈夫、前向きに希望を持って信じて待っている",emo:"hope"},
+    {text:"仕方ない、しょうがない、結果を受け入れるしかない",emo:"resignation"},
+    {text:"結果がよくてほっとした、よかった、肩の荷が降りた",emo:"relief"},
+    {text:"どうにもならない、何もできない無力な気持ちがある",emo:"helplessness"},
+    {text:"結果が気になって知りたくて好奇心が止まらない",emo:"curiosity"},
+    {text:"穏やかに落ち着いて静かに結果を待っていられる",emo:"calm"},
+    {text:"自分の健康について物思いにふけって思索する時間",emo:"contemplation"},
+  ]},
+  {q:"尊敬する人について",samples:[
+    {text:"尊敬して敬う、畏敬の念を強く感じる存在がいる",emo:"reverence"},
+    {text:"大好きで愛情を感じる、大切でかけがえない存在",emo:"love"},
+    {text:"圧倒されて言葉を失う、壮大な存在に息をのむ",emo:"awe"},
+    {text:"その言動に感動して心が震えた、泣けてしまった",emo:"moved"},
+    {text:"この人を見ると希望と前向きな気持ちが湧いてくる",emo:"hope"},
+    {text:"憧れて焦がれる、あんな人になりたいと思っている",emo:"longing"},
+    {text:"絆で繋がっている、分かち合える仲間のような存在だ",emo:"bond"},
+    {text:"羨ましくて嫉妬してしまうほどすごい尊敬する人",emo:"jealousy"},
+    {text:"この人への感謝がいつもある、ありがとうと思っている",emo:"gratitude"},
+    {text:"共感できる、気持ちがわかって寄り添いたい存在",emo:"empathy"},
+  ]},
+  {q:"嫉妬を感じた瞬間",samples:[
+    {text:"羨ましくて妬ましくて嫉妬してやきもちを焼いた",emo:"jealousy"},
+    {text:"悔しくて怒りを感じてムカついて腹が立ってしまった",emo:"anger"},
+    {text:"憧れて焦がれる気持ちが強くなって止まらなくなる",emo:"longing"},
+    {text:"嫉妬する自分が恥ずかしくて恥をかいた、情けない",emo:"shame"},
+    {text:"嫉妬して悲しくなってつらくなってしまって涙が出る",emo:"sadness"},
+    {text:"仕方ない、しょうがない、自分とは違う人間だと諦める",emo:"resignation"},
+    {text:"もっとやっておけばよかったと後悔してやり直したい",emo:"regret"},
+    {text:"きっと自分も頑張れば、前向きに希望を持って信じる",emo:"hope"},
+    {text:"軽蔑して見下す、蔑む気持ちが出てきてしまう",emo:"contempt"},
+    {text:"どうにもならない無力感がある、何もできない気持ち",emo:"helplessness"},
+  ]},
+  {q:"孤独を感じる夜",samples:[
+    {text:"一人ぼっちで寂しくてたまらない夜、誰かに会いたい",emo:"loneliness"},
+    {text:"孤立して取り残される感覚、誰もいない置いてけぼりの夜",emo:"isolation"},
+    {text:"憂鬱でどんよりと気分が重い夜が続いてしまっている",emo:"melancholy"},
+    {text:"孤独な夜に物思いにふけって思索して内省してしまう",emo:"contemplation"},
+    {text:"孤独な夜の静寂、しんとした空気が心地よく感じる",emo:"serenity"},
+    {text:"どうにもならない、何もできない無力感がある夜",emo:"helplessness"},
+    {text:"暗い夜が怖くて恐ろしくてビクビクしてしまう",emo:"fear"},
+    {text:"昔は寂しくなかったと懐かしく子供の頃を思い出す",emo:"nostalgia"},
+    {text:"仕方ない、しょうがない、一人でいいかと諦める",emo:"resignation"},
+    {text:"きっとまた誰かとつながれる、前向きに希望を持つ",emo:"hope"},
+  ]},
+  {q:"故郷について",samples:[
+    {text:"故郷が懐かしくてたまらない、あの頃が恋しくなる",emo:"nostalgia"},
+    {text:"故郷のぬくもりがほっこりと心に残って暖かい気持ち",emo:"warmth"},
+    {text:"帰りたい、故郷が恋しくて会いたいものが焦がれる",emo:"longing"},
+    {text:"故郷が大好きで愛情がある、大切でかけがえない場所",emo:"love"},
+    {text:"故郷への切なさとほろ苦さが胸が痛む形で入り混じる",emo:"bittersweet"},
+    {text:"故郷を離れたことが悲しくてつらくて涙が出る時がある",emo:"sadness"},
+    {text:"故郷に帰ると満足感と充実感があふれてくる",emo:"content"},
+    {text:"故郷の人との絆が一緒にいた仲間のようで暖かい",emo:"bond"},
+    {text:"故郷について物思いにふけって思索する内省の時間",emo:"contemplation"},
+    {text:"故郷への感謝、ありがとうという気持ちがいつもある",emo:"gratitude"},
+  ]},
+  {q:"告白を受けた時／した時",samples:[
+    {text:"胸がドキドキしてワクワクが止まらない興奮状態",emo:"excitement"},
+    {text:"嬉しくて楽しくて最高の幸せな瞬間だった",emo:"joy"},
+    {text:"不安で心配、落ち着かなくて不安でたまらない気持ち",emo:"anxiety"},
+    {text:"恥ずかしくて顔が赤くなって恥をかいた気分になった",emo:"shame"},
+    {text:"感動して心が震えるほど嬉しくて泣けてしまった",emo:"moved"},
+    {text:"まさかびっくりして驚いた、こんなことになるとは",emo:"surprise"},
+    {text:"愛している、愛してる気持ちが溢れて恋する思い",emo:"love"},
+    {text:"断ってしまって悲しくてつらかった、涙が出た",emo:"sadness"},
+    {text:"ほっとした、よかった、想いが伝わって肩の荷が降りた",emo:"relief"},
+    {text:"申し訳なくて罪悪感があって気持ちがつらくてごめん",emo:"guilt"},
+  ]},
+  {q:"期待していたことが外れた時",samples:[
+    {text:"がっかりして失望して落胆してしまった出来事だった",emo:"disappointment"},
+    {text:"悲しくてつらくて涙が出てきてしまった",emo:"sadness"},
+    {text:"腹が立ってムカつく、怒りがこみ上げてきてしまう",emo:"anger"},
+    {text:"あんなに期待した自分が後悔している、やり直したい",emo:"regret"},
+    {text:"仕方ない、しょうがない、諦めるしかないと思った",emo:"resignation"},
+    {text:"まさかこんな結果とはびっくりして驚いてしまった",emo:"surprise"},
+    {text:"次はきっとうまくいく、前向きに希望を持って進む",emo:"hope"},
+    {text:"どうにもならない、無力感でいっぱいになってしまう",emo:"helplessness"},
+    {text:"期待していただけに切なくてほろ苦い胸が痛む",emo:"bittersweet"},
+    {text:"こんな結果を出した人を軽蔑して見下したくなる",emo:"contempt"},
+  ]},
+  {q:"知らない街を歩いている時",samples:[
+    {text:"知らない場所が気になって知りたくて好奇心が止まらない",emo:"curiosity"},
+    {text:"初めての場所でワクワクしてドキドキして興奮する",emo:"excitement"},
+    {text:"圧倒されて言葉を失う景色や建物があって壮大だ",emo:"awe"},
+    {text:"謎めいた雰囲気が神秘的で不思議な感じがする",emo:"mystery"},
+    {text:"迷子になりそうで心配で落ち着かない不安になってくる",emo:"anxiety"},
+    {text:"嬉しい発見に喜びが溢れて楽しくて幸せな気持ちになる",emo:"joy"},
+    {text:"この街に憧れて焦がれていた思いがやっと叶った",emo:"longing"},
+    {text:"ひとり旅で一人の時間を楽しむおひとりさまの散策",emo:"solitude_positive"},
+    {text:"充実感と満足感がある散策で充実した1日になった",emo:"content"},
+    {text:"静かな路地でしんとした静寂を感じてほっとする",emo:"serenity"},
+  ]},
+  {q:"古い写真を見返した時",samples:[
+    {text:"昔の写真が懐かしくてたまらない、あの頃が恋しい",emo:"nostalgia"},
+    {text:"写真が切なくてほろ苦い胸が痛む気持ちにさせる",emo:"bittersweet"},
+    {text:"感動して心が震えた、泣けてしまうほどだった",emo:"moved"},
+    {text:"ぬくもりを感じてほっこりした暖かい思い出の写真",emo:"warmth"},
+    {text:"もうあの頃に戻れないと悲しくてつらくて涙が出る",emo:"sadness"},
+    {text:"写真の中の人への愛情が溢れてきて大好きだと思う",emo:"love"},
+    {text:"写真の頃が恋しくて会いたい人が焦がれる存在がいる",emo:"longing"},
+    {text:"物思いにふけって昔を思い出す内省の時間になった",emo:"contemplation"},
+    {text:"写真の人たちへの感謝がありがとうとあふれてくる",emo:"gratitude"},
+    {text:"あの頃もっとこうすればよかったと後悔してしまう",emo:"regret"},
+  ]},
+  {q:"何かを手放す決断",samples:[
+    {text:"仕方ない、しょうがない、諦めるしかないと決断した",emo:"resignation"},
+    {text:"後悔している、あの時やり直したいとしなければよかった",emo:"regret"},
+    {text:"手放してほっとした、よかった、肩の荷が降りた",emo:"relief"},
+    {text:"悲しくてつらい、手放したくなかったと涙が出る",emo:"sadness"},
+    {text:"手放した後の未来に希望と前向きな気持ちがある",emo:"hope"},
+    {text:"切なくてほろ苦い、でも前へ進む胸が痛む決断",emo:"bittersweet"},
+    {text:"申し訳なくて罪悪感がある、ごめんなさいと思う",emo:"guilt"},
+    {text:"手放す決断ができた自分が誇らしくて自信がついた",emo:"pride"},
+    {text:"穏やかに落ち着いた気持ちで手放す決断ができた",emo:"calm"},
+    {text:"どうにもならなくて無力感の末の決断だった",emo:"helplessness"},
+  ]},
+  {q:"子供を見ていて感じること",samples:[
+    {text:"子供のぬくもりにほっこりして癒されて暖かくなる",emo:"warmth"},
+    {text:"優しく慈しんで思いやりをもって大切にしたくなる",emo:"tenderness"},
+    {text:"子供が嬉しそうで楽しそうで自分も幸せになれる",emo:"joy"},
+    {text:"子供を見て昔の自分を懐かしく子供の頃を思い出す",emo:"nostalgia"},
+    {text:"子供の成長に圧倒されて言葉を失う壮大な感覚がある",emo:"awe"},
+    {text:"大好きで愛情が止まらない、大切でかけがえない存在",emo:"love"},
+    {text:"子供の言動に感動して心が震えた、泣けてしまった",emo:"moved"},
+    {text:"子供の未来に希望と前向きな気持ちを強く感じる",emo:"hope"},
+    {text:"子供のことが心配で落ち着かなくて不安になってくる",emo:"anxiety"},
+    {text:"子供の成長が嬉しいけど切ない、ほろ苦い胸が痛む",emo:"bittersweet"},
+  ]},
+  {q:"世界の未来について",samples:[
+    {text:"世界の未来への希望と前向きな気持ちが湧いてくる",emo:"hope"},
+    {text:"心配で不安で落ち着かない気持ちになってしまう",emo:"anxiety"},
+    {text:"世界の可能性に圧倒されて言葉を失う壮大さを感じる",emo:"awe"},
+    {text:"将来が怖くて恐ろしくて震えるビクビクする気持ちがある",emo:"fear"},
+    {text:"誰かの行動に感動して心が震えて泣けてしまった",emo:"moved"},
+    {text:"不正義に憤慨して、おかしいと義憤を感じてしまう",emo:"indignation"},
+    {text:"悲しい現実につらくなって涙が出てしまうことがある",emo:"sadness"},
+    {text:"謎めいて奥深く不思議な、底知れない未来が広がっている",emo:"mystery"},
+    {text:"世界について物思いにふけって思索して内省する時間",emo:"contemplation"},
+    {text:"どうにもならない、何もできない無力感を感じてしまう",emo:"helplessness"},
+  ]},
+];
+
+
+// Build sidebar gallery
+buildSidebar();
+
 // Examples
 const EXAMPLES = [
   '夜風が心地よい、夏の終わりの少しの寂しさ',
@@ -2303,6 +3039,74 @@ function showToast(msg){
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ===== SIDEBAR / GALLERY =====
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+function buildSidebar(){
+  if(typeof QUESTIONS === 'undefined') return;
+  const qList = document.getElementById('qList');
+  qList.innerHTML = '';
+  QUESTIONS.forEach((q, i) => {
+    const item = document.createElement('div');
+    item.className = 'q-item';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'q-header';
+    hdr.setAttribute('data-idx', i);
+    hdr.innerHTML = `<span class="q-num">${String(i+1).padStart(2,'0')}</span><span class="q-text">${q.q}</span><span class="q-arrow">›</span>`;
+    hdr.addEventListener('click', () => toggleQ(i));
+
+    const samples = document.createElement('div');
+    samples.className = 'q-samples';
+    samples.id = `qs-${i}`;
+    q.samples.forEach(s => {
+      const emo = EMOTIONS[s.emo];
+      const [r,g,b] = emo ? emo.c : [150,150,150];
+      const div = document.createElement('div');
+      div.className = 'sample-item';
+      div.innerHTML = `<span class="emo-badge" style="background:rgba(${r},${g},${b},0.22);color:rgb(${r},${g},${b})">${emo ? emo.name : s.emo}</span><span class="sample-text">${s.text}</span>`;
+      div.addEventListener('click', () => selectSample(s.text));
+      samples.appendChild(div);
+    });
+
+    item.appendChild(hdr);
+    item.appendChild(samples);
+    qList.appendChild(item);
+  });
+}
+
+let openQIdx = -1;
+function toggleQ(i){
+  const hdr = document.querySelector(`.q-header[data-idx="${i}"]`);
+  const samples = document.getElementById(`qs-${i}`);
+  const isOpen = samples.classList.contains('open');
+  // close all
+  document.querySelectorAll('.q-header').forEach(h => h.classList.remove('active'));
+  document.querySelectorAll('.q-samples').forEach(s => s.classList.remove('open'));
+  if(!isOpen){
+    hdr.classList.add('active');
+    samples.classList.add('open');
+    openQIdx = i;
+  } else {
+    openQIdx = -1;
+  }
+}
+
+function selectSample(text){
+  const inp = document.getElementById('textInput');
+  inp.value = text;
+  inp.dispatchEvent(new Event('input'));
+  generateArt();
+  if(window.innerWidth <= 900) closeSidebar();
 }
 
 // Mobile keyboard handling: resize on viewport change
